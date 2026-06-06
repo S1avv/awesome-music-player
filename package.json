@@ -1,0 +1,47 @@
+{
+  "name": "awesome-music-player",
+  "author": "Voloshyn Viacheslav",
+  "description": "Premium Desktop Audio Environment",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/S1avv/awesome-music-player.git"
+  },
+  "bugs": {
+    "url": "https://github.com/S1avv/awesome-music-player/issues"
+  },
+  "homepage": "https://github.com/S1avv/awesome-music-player#readme",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@heroicons/react": "^2.2.0",
+    "@tauri-apps/api": "^2.11.0",
+    "@tauri-apps/plugin-dialog": "^2.7.1",
+    "@tauri-apps/plugin-fs": "^2.5.1",
+    "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-window-state": "^2.4.1",
+    "framer-motion": "^12.40.0",
+    "lucide-react": "^1.17.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.16.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.0",
+    "@tauri-apps/cli": "^2",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^4.3.0",
+    "typescript": "~5.8.3",
+    "vite": "^7.0.4"
+  }
+}
