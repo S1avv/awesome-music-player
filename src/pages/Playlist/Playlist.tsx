@@ -8,13 +8,7 @@ import { useLibrary } from "../../contexts/LibraryContext";
 import { useAudio } from "../../contexts/AudioContext";
 import { Plus, X, Play, Pause, Grid, List, Clock, Edit3, ChevronDown, AudioLines } from "lucide-react";
 import { MediaCard } from "../../components/Cards/MediaCard";
-
-function formatTime(seconds: number) {
-  if (isNaN(seconds) || !isFinite(seconds)) return "0:00";
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
+import { formatTime } from "../../utils/formatTime";
 
 export function Playlist() {
   const { t } = useTranslation();

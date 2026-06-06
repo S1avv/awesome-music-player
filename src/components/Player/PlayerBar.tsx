@@ -4,13 +4,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { TrackCover } from "../Cards/TrackCover";
 import { useTranslation } from "../../i18n";
-
-function formatTime(seconds: number) {
-  if (isNaN(seconds) || !isFinite(seconds)) return "0:00";
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
+import { formatTime } from "../../utils/formatTime";
 
 export function PlayerBar() {
   const { 
