@@ -34,6 +34,12 @@ Awesome Music Player comes with a wide variety of custom themes, allowing you to
 The user interface and overall aesthetic of this project were built using the following Figma mockup as a primary reference:
 - [Figma Community - Music Player App Design](https://www.figma.com/community/file/1160523124711138437)
 
+## Installation
+You can easily install the latest stable version on your Windows machine:
+1. Navigate to the [Releases](https://github.com/S1avv/awesome-music-player/releases) page.
+2. Download the latest `Awesome Music Player_*_x64-setup.exe` file from the **Assets** section.
+3. Run the installer and follow the standard setup process.
+
 ## Documentation Directory
 The project documentation is divided into specific modules:
 
