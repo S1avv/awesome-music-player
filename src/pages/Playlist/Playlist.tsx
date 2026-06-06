@@ -6,7 +6,7 @@ import { useSettings } from "../../hooks/useSettings";
 import { useTranslation } from "../../i18n";
 import { useLibrary } from "../../contexts/LibraryContext";
 import { useAudio } from "../../contexts/AudioContext";
-import { Music, Plus, X, Play, Pause, Grid, List, Clock, Edit3, ChevronDown, AudioLines } from "lucide-react";
+import { Plus, X, Play, Pause, Grid, List, Clock, Edit3, ChevronDown, AudioLines } from "lucide-react";
 import { MediaCard } from "../../components/Cards/MediaCard";
 
 function formatTime(seconds: number) {

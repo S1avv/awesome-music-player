@@ -4,7 +4,7 @@ import { ArtistsSection } from "./components/ArtistsSection";
 import { TopChartsSection } from "./components/TopChartsSection";
 import { useLibrary } from "../../contexts/LibraryContext";
 import { useSettings } from "../../hooks/useSettings";
-import { Music, FolderSearch } from "lucide-react";
+import { FolderSearch } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "../../i18n";
 

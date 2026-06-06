@@ -1,5 +1,5 @@
 import { useTranslation } from "../../../i18n";
-import { Play, FolderOpen } from "lucide-react";
+import { Play } from "lucide-react";
 import { useLibrary } from "../../../contexts/LibraryContext";
 import { useAudio } from "../../../contexts/AudioContext";
 import { useNavigate } from "react-router-dom";

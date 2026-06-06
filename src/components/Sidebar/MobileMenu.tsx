@@ -5,28 +5,10 @@ import {
   FilmIcon, 
   UserIcon, 
   UserGroupIcon,
-  ArrowRightOnRectangleIcon, 
-  XMarkIcon 
+  ArrowRightOnRectangleIcon
 } from "@heroicons/react/24/solid";
 import { useTranslation } from "../../i18n";
 
-function Logo() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="w-8 h-8 pointer-events-none">
-      <g strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        {/* Yellow Note */}
-        <path d="M8 14v-7l7-2v6" stroke="#FACD66" />
-        <circle cx="6" cy="14" r="2.5" fill="#FACD66" stroke="#FACD66" />
-        <circle cx="13" cy="12" r="2.5" fill="#FACD66" stroke="#FACD66" />
-        
-        {/* Teal Note */}
-        <path d="M14 17v-8l6-1.5v7" stroke="#A4C7C6" />
-        <circle cx="12" cy="17" r="2.5" fill="#A4C7C6" stroke="#A4C7C6" />
-        <circle cx="18" cy="15.5" r="2.5" fill="#A4C7C6" stroke="#A4C7C6" />
-      </g>
-    </svg>
-  );
-}
 
 interface MobileMenuProps {
   isOpen: boolean;

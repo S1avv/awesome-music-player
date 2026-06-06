@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
+
 import { useLibrary } from "../../contexts/LibraryContext";
 import { useNotification } from "../../contexts/NotificationContext";
 import { useTranslation } from "../../i18n";
-import { ArrowLeft, Save, Upload, Music, User, Disc, FolderPlus, Search, Check, ChevronDown, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Music, User, Disc, FolderPlus, Search, Check, ChevronDown, Trash2 } from "lucide-react";
 import { CoverSearchModal } from "./components/CoverSearchModal";
 
 function CustomSelect({ options, value, onChange, placeholder }: { options: {id: string, name: string}[], value: string, onChange: (val: string) => void, placeholder: string }) {
@@ -129,6 +129,7 @@ export function TrackDetail() {
       await scanLibrary();
       
       showNotification(t.trackDetail.saveSuccess, "success");
+      setIsSaved(true);
       
       // Navigate to the new path if moved, otherwise go back
       if (selectedAlbumFolder) {

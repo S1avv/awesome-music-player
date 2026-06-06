@@ -2,8 +2,6 @@ import { NavLink } from "react-router-dom";
 import {
   HomeIcon,
   QueueListIcon,
-  RadioIcon,
-  FilmIcon,
   UserIcon,
   UserGroupIcon,
   PowerIcon,

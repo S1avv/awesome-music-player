@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Search, X, Upload, Image as ImageIcon } from "lucide-react";
+import { Search, X, Upload } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "../../../i18n";
 

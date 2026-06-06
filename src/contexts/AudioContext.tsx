@@ -5,19 +5,7 @@ import { readFile } from "@tauri-apps/plugin-fs";
 import { Track, useLibrary } from "./LibraryContext";
 import { useNotification } from "./NotificationContext";
 
-const MIME_MAP: Record<string, string> = {
-  mp3: "audio/mpeg",
-  wav: "audio/wav",
-  flac: "audio/flac",
-  m4a: "audio/mp4",
-  ogg: "audio/ogg",
-  wma: "audio/x-ms-wma",
-};
 
-function getMimeType(path: string): string {
-  const ext = path.split('.').pop()?.toLowerCase() || "mp3";
-  return MIME_MAP[ext] || "audio/mpeg";
-}
 
 function hasUnsafeChars(path: string): boolean {
   return path.includes('#') || path.includes('?');
@@ -75,7 +63,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const { showNotification } = useNotification();
   const hasIncrementedRef = useRef(false);
 
-  const handleNextTrackRef = useRef<() => void>();
+  const handleNextTrackRef = useRef<(() => void) | null>(null);
 
   const handleNextTrack = useCallback(() => {
     if (!currentTrack || queue.length === 0) return;
@@ -387,10 +375,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const handlePrevTrackRef = useRef<() => void>();
+  const handlePrevTrackRef = useRef<(() => void) | null>(null);
   handlePrevTrackRef.current = prevTrack;
 
-  const togglePlayPauseRef = useRef<() => void>();
+  const togglePlayPauseRef = useRef<(() => void) | null>(null);
   togglePlayPauseRef.current = togglePlayPause;
 
   const setVolume = (vol: number) => {

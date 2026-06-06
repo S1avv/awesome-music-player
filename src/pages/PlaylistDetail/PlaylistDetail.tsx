@@ -176,7 +176,7 @@ export function PlaylistDetail() {
       <div className="px-8">
         {viewMode === "grid" ? (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-6">
-            {playlistTracks.map((track, idx) => (
+            {playlistTracks.map((track) => (
               <div key={track.id} className="min-w-0">
                 <MediaCard 
                   title={track.title}

@@ -18,7 +18,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "./i18n";
 import "./App.css";
 import { Profile } from "./pages/Profile/Profile";
-import { useNotification } from "./contexts/NotificationContext";
 
 function App() {
   const { isFirstRun } = useSettings();
