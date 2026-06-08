@@ -192,7 +192,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
         </div>
 
         {/* Search */}
-        <div className="flex-1 flex items-center gap-4 px-6 py-4 pointer-events-auto cursor-grab active:cursor-grabbing relative">
+        <div className="flex-1 flex items-center gap-4 px-6 py-4 pointer-events-auto relative">
           <Search className="w-6 h-6 text-light opacity-25" />
           <input
             type="text"
