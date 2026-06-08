@@ -14,21 +14,25 @@
       {
         "title": "Awesome Music Player",
         "width": 800,
-        "height": 600,
+        "height": 650,
         "resizable": true,
         "fullscreen": false,
         "visible": false,
         "decorations": true,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
-        "transparent": true
+        "transparent": true,
+        "minWidth": 800,
+        "minHeight": 650
       }
     ],
     "security": {
       "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' asset: http://asset.localhost https://asset.localhost tauri: blob: data:; img-src 'self' asset: http://asset.localhost https://asset.localhost tauri: blob: data:; media-src 'self' asset: http://asset.localhost https://asset.localhost tauri: blob: data:; connect-src 'self' asset: http://asset.localhost https://asset.localhost tauri: blob: data: https://itunes.apple.com;",
       "assetProtocol": {
         "enable": true,
-        "scope": ["**"]
+        "scope": [
+          "**"
+        ]
       }
     }
   },

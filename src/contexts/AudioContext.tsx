@@ -31,6 +31,8 @@ interface AudioContextType {
   seek: (progress: number) => void;
   toggleRepeat: () => void;
   toggleShuffle: () => void;
+  isNowPlayingOpen: boolean;
+  setIsNowPlayingOpen: (open: boolean) => void;
 }
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
@@ -55,6 +57,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const [repeatMode, setRepeatMode] = useState<"off" | "all" | "one">("off");
   const [isShuffled, setIsShuffled] = useState(false);
+  const [isNowPlayingOpen, setIsNowPlayingOpen] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -398,13 +401,34 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     setCurrentTime(time);
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlayPauseRef.current?.();
+      } else if (e.code === 'KeyN' && e.shiftKey) {
+        handleNextTrackRef.current?.();
+      } else if (e.code === 'KeyP' && e.shiftKey) {
+        handlePrevTrackRef.current?.();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
     <AudioContext.Provider value={{
       currentTrack, queue, isPlaying, volume, progress, currentTime, duration,
       repeatMode, isShuffled,
       playTrack, togglePlayPause, nextTrack: handleNextTrack, prevTrack, setVolume, seek,
       toggleRepeat: () => setRepeatMode(prev => prev === "off" ? "all" : prev === "all" ? "one" : "off"),
-      toggleShuffle: () => setIsShuffled(prev => !prev)
+      toggleShuffle: () => setIsShuffled(prev => !prev),
+      isNowPlayingOpen, setIsNowPlayingOpen
     }}>
       {children}
     </AudioContext.Provider>

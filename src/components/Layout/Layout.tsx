@@ -5,6 +5,7 @@ import { Header } from "../Header/Header";
 import { DragRegion } from "../Header/DragRegion";
 import { MobileMenu } from "../Sidebar/MobileMenu";
 import { PlayerBar } from "../Player/PlayerBar";
+import { NowPlaying } from "../Player/NowPlaying";
 import { isMacOsDesktop } from "../../utils/env";
 import { useAudio } from "../../contexts/AudioContext";
 
@@ -17,7 +18,7 @@ export function Layout() {
   return (
     <div className="flex flex-col w-full h-screen bg-dark text-light font-sans overflow-hidden relative">
       {/* Header section */}
-      <DragRegion className={`w-full pt-4 md:pt-8 pr-6 md:pr-8 ${isMacOsDesktop() ? 'pl-24' : 'pl-6 md:pl-8'} shrink-0 relative z-50`}>
+      <DragRegion className={`w-full pt-4 md:pt-8 pr-6 md:pr-8 ${isMacOsDesktop() ? 'pl-8' : 'pl-6 md:pl-8'} shrink-0 relative z-50`}>
         <Header onMenuClick={() => setIsMobileMenuOpen(true)} />
       </DragRegion>
 
@@ -32,6 +33,7 @@ export function Layout() {
       </div>
 
       {showPlayerBar && <PlayerBar />}
+      <NowPlaying />
 
       <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
     </div>
