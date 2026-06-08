@@ -1,4 +1,4 @@
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, Edit3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { TrackCover } from "./TrackCover";
 
@@ -52,14 +52,26 @@ export function MediaCard({ image = "/PhonographRecord.png", title, subtitle, on
         </div>
       </div>
       
-      <div className="flex flex-col">
-        {titleHref ? (
-          <Link to={titleHref} onClick={e => e.stopPropagation()} className="text-light font-bold truncate text-base md:text-lg hover:text-secondary transition-colors block w-full">
-            {title}
-          </Link>
-        ) : (
-          <h4 className="text-light font-bold truncate text-base md:text-lg">{title}</h4>
-        )}
+      <div className="flex flex-col w-full min-w-0">
+        <div className="flex items-center justify-between gap-2 w-full">
+          {titleHref ? (
+            <Link to={titleHref} onClick={e => e.stopPropagation()} className="text-light font-bold truncate text-base md:text-lg hover:text-secondary transition-colors block flex-1">
+              {title}
+            </Link>
+          ) : (
+            <h4 className="text-light font-bold truncate text-base md:text-lg flex-1">{title}</h4>
+          )}
+          {titleHref && trackPath && (
+            <Link 
+              to={`/track/${encodeURIComponent(trackPath)}`}
+              onClick={(e) => e.stopPropagation()}
+              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded transition-all text-light/50 hover:text-light shrink-0"
+              title="Edit Track"
+            >
+              <Edit3 className="w-4 h-4" />
+            </Link>
+          )}
+        </div>
         <p className="text-light/50 text-sm md:text-base font-medium truncate">{subtitle}</p>
         {playCount !== undefined && (
           <p className="text-secondary/80 text-xs md:text-sm font-medium mt-1">{playCount} plays</p>
