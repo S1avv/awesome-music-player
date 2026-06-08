@@ -59,6 +59,10 @@ pub fn run() {
             let metadata = crate::commands::library::MetadataOverrides::load(app.handle().clone());
             app.manage(std::sync::Arc::new(std::sync::Mutex::new(metadata)));
 
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_decorations(true);
+            }
+
             let play_pause_i = MenuItem::with_id(app, "play_pause", "Play / Pause", true, None::<&str>)?;
             let next_i = MenuItem::with_id(app, "next", "Next Track", true, None::<&str>)?;
             let prev_i = MenuItem::with_id(app, "prev", "Previous Track", true, None::<&str>)?;
