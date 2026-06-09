@@ -30,7 +30,8 @@ export function NowPlaying() {
     toggleRepeat,
     toggleShuffle,
     isNowPlayingOpen,
-    setIsNowPlayingOpen
+    setIsNowPlayingOpen,
+    queue
   } = useAudio();
 
   const [coverUrl, setCoverUrl] = useState<string>("/PhonographRecord.png");
@@ -137,7 +138,11 @@ export function NowPlaying() {
                 </button>
 
                 <div className="flex items-center gap-3 sm:gap-6">
-                  <button onClick={prevTrack} className="text-light/80 hover:text-light transition-colors p-2 lg:p-3 hover:bg-white/5 rounded-full">
+                  <button 
+                    onClick={prevTrack} 
+                    disabled={queue.length <= 1}
+                    className={`transition-colors p-2 lg:p-3 rounded-full ${queue.length <= 1 ? 'text-light/20 cursor-not-allowed' : 'text-light/80 hover:text-light hover:bg-white/5'}`}
+                  >
                     <SkipBack className="w-6 h-6 lg:w-8 lg:h-8 fill-current" />
                   </button>
 
@@ -152,7 +157,11 @@ export function NowPlaying() {
                     )}
                   </button>
 
-                  <button onClick={nextTrack} className="text-light/80 hover:text-light transition-colors p-2 lg:p-3 hover:bg-white/5 rounded-full">
+                  <button 
+                    onClick={nextTrack} 
+                    disabled={queue.length <= 1}
+                    className={`transition-colors p-2 lg:p-3 rounded-full ${queue.length <= 1 ? 'text-light/20 cursor-not-allowed' : 'text-light/80 hover:text-light hover:bg-white/5'}`}
+                  >
                     <SkipForward className="w-6 h-6 lg:w-8 lg:h-8 fill-current" />
                   </button>
                 </div>
