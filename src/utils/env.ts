@@ -5,3 +5,7 @@ export const isTauri = () => {
 export const isWindowsDesktop = () => {
   return isTauri() && window.navigator.userAgent.toLowerCase().includes("win");
 };
+
+export const isMacOsDesktop = () => {
+  return isTauri() && window.navigator.userAgent.toLowerCase().includes("mac");
+};
