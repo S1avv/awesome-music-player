@@ -73,6 +73,10 @@ pub fn run() {
             app.manage(std::sync::Arc::new(std::sync::Mutex::new(metadata)));
 
             if let Some(window) = app.get_webview_window("main") {
+                #[cfg(not(target_os = "macos"))]
+                let _ = window.set_decorations(false);
+                
+                #[cfg(target_os = "macos")]
                 let _ = window.set_decorations(true);
             }
 
