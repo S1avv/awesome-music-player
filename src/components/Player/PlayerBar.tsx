@@ -22,7 +22,8 @@ export function PlayerBar() {
     isShuffled,
     toggleRepeat,
     toggleShuffle,
-    setIsNowPlayingOpen
+    setIsNowPlayingOpen,
+    queue
   } = useAudio();
 
   const { t } = useTranslation();
@@ -81,7 +82,11 @@ export function PlayerBar() {
               </div>
             </button>
 
-            <button onClick={prevTrack} className="group relative text-light/80 hover:text-light transition-colors">
+            <button 
+              onClick={prevTrack} 
+              disabled={queue.length <= 1}
+              className={`group relative transition-colors ${queue.length <= 1 ? 'text-light/20 cursor-not-allowed' : 'text-light/80 hover:text-light'}`}
+            >
               <SkipBack className="w-5 h-5 md:w-6 md:h-6 fill-current" />
               <div className="absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 px-4 py-2 bg-dark-alt border border-white/5 text-light text-sm font-medium rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-0 delay-0 group-hover:duration-300 group-hover:delay-[100ms] whitespace-nowrap z-50 pointer-events-none">
                 {t.tray.prevTrack}
@@ -102,7 +107,11 @@ export function PlayerBar() {
               </div>
             </button>
 
-            <button onClick={nextTrack} className="group relative text-light/80 hover:text-light transition-colors">
+            <button 
+              onClick={nextTrack} 
+              disabled={queue.length <= 1}
+              className={`group relative transition-colors ${queue.length <= 1 ? 'text-light/20 cursor-not-allowed' : 'text-light/80 hover:text-light'}`}
+            >
               <SkipForward className="w-5 h-5 md:w-6 md:h-6 fill-current" />
               <div className="absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 px-4 py-2 bg-dark-alt border border-white/5 text-light text-sm font-medium rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-0 delay-0 group-hover:duration-300 group-hover:delay-[100ms] whitespace-nowrap z-50 pointer-events-none">
                 {t.tray.nextTrack}
