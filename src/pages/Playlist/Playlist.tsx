@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
-import { invoke } from "@tauri-apps/api/core";
-import { useSettings } from "../../hooks/useSettings";
+
 import { useTranslation } from "../../i18n";
 import { useLibrary } from "../../contexts/LibraryContext";
 import { useAudio } from "../../contexts/AudioContext";
@@ -14,8 +13,7 @@ import { TrackMenu } from "../../components/ContextMenu/TrackMenu";
 export function Playlist() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { libraryPath } = useSettings();
-  const { collections, tracks, scanLibrary } = useLibrary();
+  const { playlists, tracks, createPlaylist } = useLibrary();
   const { playTrack, currentTrack, isPlaying, togglePlayPause } = useAudio();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState<"my_collection" | "recently_added" | "most_played">(
@@ -56,19 +54,15 @@ export function Playlist() {
 
   const handleCreatePlaylist = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPlaylistName.trim() || !libraryPath) return;
+    if (!newPlaylistName.trim()) return;
 
     setIsCreating(true);
     try {
-      await invoke("create_folder", { 
-        basePath: libraryPath, 
-        folderName: newPlaylistName.trim() 
-      });
-      await scanLibrary();
+      await createPlaylist(newPlaylistName.trim());
       setIsCreateModalOpen(false);
       setNewPlaylistName("");
     } catch (error) {
-      console.error("Failed to create playlist folder:", error);
+      console.error("Failed to create playlist:", error);
     } finally {
       setIsCreating(false);
     }
@@ -183,16 +177,16 @@ export function Playlist() {
             <h3 className="text-light text-base md:text-lg font-bold text-center">{t.playlist.createPlaylist}</h3>
           </div>
 
-          {collections.map(collection => (
+          {playlists.filter(p => p.id !== 'main_library').map(playlist => (
             <div 
-              key={collection.id} 
-              onClick={() => navigate(`/playlist/${encodeURIComponent(collection.id)}`)}
+              key={playlist.id} 
+              onClick={() => navigate(`/playlist/${encodeURIComponent(playlist.id)}`)}
               className="relative aspect-square rounded-[2rem] overflow-hidden group cursor-pointer transition-all min-w-0"
             >
               {/* Background */}
               <div 
-                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                style={{ backgroundImage: `url('${collection.image}')` }}
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110 bg-dark"
+                style={{ backgroundImage: `url('${playlist.cover_path || '/PhonographRecord.png'}')` }}
               />
               
               {/* Overlay Gradient */}
@@ -201,10 +195,10 @@ export function Playlist() {
               {/* Content */}
               <div className="absolute bottom-0 left-0 w-full p-6 flex flex-col justify-end">
                 <h3 className="text-light text-2xl font-bold truncate mb-1">
-                  {collection.name}
+                  {playlist.name}
                 </h3>
                 <p className="text-light/50 text-sm font-medium">
-                  {collection.trackCount} {t.playlist.tracks}
+                  {playlist.tracks.length} {t.playlist.tracks}
                 </p>
               </div>
             </div>
@@ -308,11 +302,11 @@ export function Playlist() {
       )}
 
       {/* Empty State for Collections */}
-      {activeTab === "my_collection" && tracks.length === 0 && (
+      {activeTab === "my_collection" && playlists.length <= 1 && (
         <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
-          <h2 className="text-2xl font-bold text-light mb-3">{t.playlist?.noCollectionsTitle || "No collections found"}</h2>
+          <h2 className="text-2xl font-bold text-light mb-3">{t.playlist?.noCollectionsTitle || "No playlists found"}</h2>
           <p className="text-light/50 max-w-md">
-            {t.playlist?.noCollectionsDesc || "Folders with music will automatically appear here as your collections."}
+            {t.playlist?.noCollectionsDesc || "Create your first playlist and start organizing your favorite tracks."}
           </p>
         </div>
       )}

@@ -3,6 +3,7 @@ pub mod commands;
 use commands::disk::*;
 use commands::folders::*;
 use commands::library::*;
+use commands::playlists::*;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{Emitter, Manager};
@@ -71,6 +72,9 @@ pub fn run() {
 
             let metadata = crate::commands::library::MetadataOverrides::load(app.handle().clone());
             app.manage(std::sync::Arc::new(std::sync::Mutex::new(metadata)));
+            
+            let playlist_manager = crate::commands::playlists::PlaylistManager::load(app.handle().clone());
+            app.manage(std::sync::Arc::new(std::sync::Mutex::new(playlist_manager)));
 
             if let Some(window) = app.get_webview_window("main") {
                 #[cfg(not(target_os = "macos"))]
@@ -158,7 +162,13 @@ pub fn run() {
             download_image_to_temp,
             increment_play_count,
             update_tray_text,
-            update_tray_menu
+            update_tray_menu,
+            get_playlists,
+            create_playlist,
+            update_playlist,
+            delete_playlist,
+            add_track_to_playlist,
+            remove_track_from_playlist
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

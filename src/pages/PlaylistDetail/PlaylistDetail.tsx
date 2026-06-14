@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useNavigate } from "react-router-dom";
-import { invoke } from "@tauri-apps/api/core";
+
 import { useLibrary } from "../../contexts/LibraryContext";
 import { useAudio } from "../../contexts/AudioContext";
 import { useTranslation } from "../../i18n";
@@ -20,7 +20,7 @@ export function PlaylistDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { collections, tracks, scanLibrary } = useLibrary();
+  const { playlists, tracks, updatePlaylist, removeTrackFromPlaylist } = useLibrary();
   const { playTrack, currentTrack, isPlaying, togglePlayPause, queue } = useAudio();
   
   const [viewMode, setViewMode] = useState<"grid" | "table">("table");
@@ -33,9 +33,9 @@ export function PlaylistDetail() {
   
   const decodedId = decodeURIComponent(id).replace(/\\/g, '/');
 
-  const collection = collections.find(c => c.id.toLowerCase() === decodedId.toLowerCase());
-  let collectionName = collection ? collection.name : t.playlistDetail.playlist;
-  let collectionImage = collection ? collection.image : "/PhonographRecord.png";
+  const playlist = playlists.find(c => c.id === decodedId);
+  let collectionName = playlist ? playlist.name : t.playlistDetail.playlist;
+  let collectionImage = playlist?.cover_path ? playlist.cover_path : "/PhonographRecord.png";
 
   if (decodedId === "main_library") collectionName = t.playlist.allTracks;
   if (decodedId === "recently_added") collectionName = t.playlist.recentlyAdded;
@@ -48,26 +48,22 @@ export function PlaylistDetail() {
     playlistTracks = [...tracks].sort((a, b) => b.added_at - a.added_at);
   } else if (decodedId === "most_played") {
     playlistTracks = [...tracks].filter(t => t.play_count > 0).sort((a, b) => b.play_count - a.play_count);
+  } else if (playlist) {
+    playlistTracks = tracks.filter(t => playlist.tracks.includes(t.path));
   } else {
-    playlistTracks = tracks.filter(t => t.path.replace(/\\/g, '/').includes(decodedId.replace(/\\/g, '/')));
+    playlistTracks = [];
   }
 
   const isSpecialPlaylist = ["main_library", "recently_added", "most_played"].includes(decodedId);
 
   const handleRename = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newFolderName.trim() || newFolderName.trim() === collectionName) return;
+    if (!newFolderName.trim() || newFolderName.trim() === collectionName || !playlist) return;
 
     setIsRenaming(true);
     try {
-      const newPath = await invoke<string>("rename_folder", { 
-        oldPath: decodedId, 
-        newName: newFolderName.trim() 
-      });
-      await scanLibrary();
+      await updatePlaylist(playlist.id, newFolderName.trim(), playlist.description, playlist.cover_path);
       setIsRenameModalOpen(false);
-      // Navigate to the new path to prevent the current page from breaking
-      navigate(`/playlist/${encodeURIComponent(newPath)}`, { replace: true });
     } catch (error) {
       console.error("Failed to rename playlist:", error);
     } finally {
@@ -253,7 +249,19 @@ export function PlaylistDetail() {
                     {track.play_count || 0}
                   </div>
                 )}
-                <div className="flex items-center justify-end">
+                <div className="flex items-center justify-end gap-1">
+                  {!isSpecialPlaylist && playlist && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeTrackFromPlaylist(playlist.id, track.path);
+                      }}
+                      className="p-1.5 text-light/50 hover:text-red-500 hover:bg-white/10 rounded-full transition-all opacity-0 group-hover:opacity-100"
+                      title="Remove from Playlist"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <TrackMenu track={track} playlistTracks={playlistTracks} />
                   </div>

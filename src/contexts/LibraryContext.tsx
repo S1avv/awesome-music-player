@@ -20,22 +20,30 @@ export interface DiskSpaceResult {
   used_space: number;
 }
 
-export interface Collection {
+export interface Playlist {
   id: string;
   name: string;
-  trackCount: number;
-  image: string;
+  description?: string;
+  cover_path?: string;
+  tracks: string[];
+  created_at: number;
 }
 
 interface LibraryContextType {
   tracks: Track[];
-  collections: Collection[];
+  playlists: Playlist[];
   isScanning: boolean;
   isInitialized: boolean;
   diskSpace: DiskSpaceResult | null;
   scanLibrary: () => Promise<void>;
   fetchDiskSpace: () => Promise<void>;
   incrementPlayCount: (path: string) => Promise<void>;
+  fetchPlaylists: () => Promise<void>;
+  createPlaylist: (name: string, description?: string, coverPath?: string) => Promise<Playlist>;
+  updatePlaylist: (id: string, name: string, description?: string, coverPath?: string) => Promise<Playlist>;
+  deletePlaylist: (id: string) => Promise<void>;
+  addTrackToPlaylist: (playlistId: string, trackPath: string) => Promise<void>;
+  removeTrackFromPlaylist: (playlistId: string, trackPath: string) => Promise<void>;
 }
 
 const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
@@ -49,19 +57,42 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     }
     return [];
   });
-  const [collections, setCollections] = useState<Collection[]>(() => {
-    const saved = localStorage.getItem('mucis_library_collections');
+  
+  const [playlists, setPlaylists] = useState<Playlist[]>(() => {
+    const saved = localStorage.getItem('mucis_library_playlists');
     if (saved) {
       try { return JSON.parse(saved); } catch (e) { return []; }
     }
     return [];
   });
+  
   const [isScanning, setIsScanning] = useState(false);
   const [diskSpace, setDiskSpace] = useState<DiskSpaceResult | null>(null);
   
   const { showNotification } = useNotification();
   const { t } = useTranslation();
   const trackCountRef = useRef<number>(-1);
+
+  const fetchPlaylists = useCallback(async () => {
+    try {
+      const result = await invoke<Playlist[]>("get_playlists");
+      
+      // We always inject a "Main" logical playlist for ALL tracks in UI
+      const mainPlaylist: Playlist = {
+        id: "main_library",
+        name: "All Tracks",
+        description: "Your complete library",
+        tracks: [], // special case, not needed
+        created_at: 0
+      };
+      
+      const allPlaylists = [mainPlaylist, ...result];
+      setPlaylists(allPlaylists);
+      try { localStorage.setItem('mucis_library_playlists', JSON.stringify(allPlaylists)); } catch (e) {}
+    } catch (err) {
+      console.error("Failed to fetch playlists:", err);
+    }
+  }, []);
 
   const scanLibrary = useCallback(async () => {
     if (!libraryPath) {
@@ -72,81 +103,18 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     setIsScanning(true);
     try {
       const result = await invoke<Track[]>("scan_local_tracks", { path: libraryPath });
-      const folders = await invoke<string[]>("get_folders", { path: libraryPath });
-      
       setTracks(result);
       try { localStorage.setItem('mucis_library_tracks', JSON.stringify(result)); } catch (e) { console.warn('Failed to cache tracks', e); }
       trackCountRef.current = result.length;
       
-      const collectionsMap = new Map<string, Collection>();
-      
-      // Always add the "Main" collection first for ALL tracks in the library
-      collectionsMap.set("main_library", {
-        id: "main_library",
-        name: "All Tracks",
-        trackCount: result.length,
-        image: "/PhonographRecord.png"
-      });
-
-      // Add all physical subfolders first
-      folders.forEach(folderPath => {
-        const parts = folderPath.split(/[/\\]/);
-        const folderName = parts[parts.length - 1]; // Because get_folders returns the full path to the directory
-        collectionsMap.set(folderPath.replace(/\\/g, '/'), {
-          id: folderPath.replace(/\\/g, '/'),
-          name: folderName,
-          trackCount: 0,
-          image: "/PhonographRecord.png"
-        });
-      });
-
-      result.forEach(track => {
-        // Extraction of parent folder name from path
-        const parts = track.path.split(/[/\\]/);
-        if (parts.length > 1) {
-          const folderName = parts[parts.length - 2];
-          const folderPath = parts.slice(0, -1).join('/');
-          
-          // Don't create a separate collection if the parent folder IS the library folder
-          const normalizedFolderPath = folderPath.replace(/\\/g, '/').toLowerCase();
-          const normalizedLibraryPath = libraryPath.replace(/\\/g, '/').toLowerCase();
-          
-          if (normalizedFolderPath !== normalizedLibraryPath) {
-            // Find in map ignoring cases/slashes
-            let foundKey = folderPath.replace(/\\/g, '/');
-            for (const key of collectionsMap.keys()) {
-              if (key.toLowerCase() === normalizedFolderPath) {
-                foundKey = key;
-                break;
-              }
-            }
-            
-            if (collectionsMap.has(foundKey)) {
-              collectionsMap.get(foundKey)!.trackCount++;
-            } else {
-              collectionsMap.set(foundKey, {
-                id: foundKey,
-                name: folderName,
-                trackCount: 1,
-                image: "/PhonographRecord.png"
-              });
-            }
-          }
-        }
-      });
-      
-      const collectionsArray = Array.from(collectionsMap.values());
-      setCollections(collectionsArray);
-      try { localStorage.setItem('mucis_library_collections', JSON.stringify(collectionsArray)); } catch (e) { console.warn('Failed to cache collections', e); }
-
+      await fetchPlaylists();
     } catch (error) {
       console.error("Failed to scan library:", error);
       setTracks([]);
-      setCollections([]);
     } finally {
       setIsScanning(false);
     }
-  }, [libraryPath]);
+  }, [libraryPath, fetchPlaylists]);
 
   const fetchDiskSpace = useCallback(async () => {
     try {
@@ -171,17 +139,16 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       try {
         const count = await invoke<number>("count_local_tracks", { path: libraryPath });
         
-        // If trackCountRef is -1, it means we haven't done the initial load yet.
         if (trackCountRef.current >= 0 && count > trackCountRef.current) {
           const diff = count - trackCountRef.current;
           showNotification(t.library.newTracks.replace("{count}", diff.toString()), "success");
-          scanLibrary(); // Trigger a full scan to load metadata
-          fetchDiskSpace(); // Update disk space info
+          scanLibrary();
+          fetchDiskSpace();
         } else if (trackCountRef.current >= 0 && count < trackCountRef.current) {
           const diff = trackCountRef.current - count;
           showNotification(t.library.tracksRemoved.replace("{count}", diff.toString()), "warning");
           scanLibrary();
-          fetchDiskSpace(); // Update disk space info
+          fetchDiskSpace();
         }
         
         trackCountRef.current = count;
@@ -206,8 +173,75 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const createPlaylist = async (name: string, description?: string, coverPath?: string) => {
+    try {
+      const result = await invoke<Playlist>("create_playlist", { name, description, coverPath });
+      await fetchPlaylists();
+      return result;
+    } catch (e: any) {
+      console.error(e);
+      throw e;
+    }
+  };
+
+  const updatePlaylist = async (id: string, name: string, description?: string, coverPath?: string) => {
+    try {
+      const result = await invoke<Playlist>("update_playlist", { id, name, description, coverPath });
+      await fetchPlaylists();
+      return result;
+    } catch (e: any) {
+      console.error(e);
+      throw e;
+    }
+  };
+
+  const deletePlaylist = async (id: string) => {
+    try {
+      await invoke("delete_playlist", { id });
+      await fetchPlaylists();
+    } catch (e: any) {
+      console.error(e);
+      throw e;
+    }
+  };
+
+  const addTrackToPlaylist = async (playlistId: string, trackPath: string) => {
+    try {
+      await invoke("add_track_to_playlist", { playlistId, trackPath });
+      await fetchPlaylists();
+    } catch (e: any) {
+      console.error(e);
+      throw e;
+    }
+  };
+
+  const removeTrackFromPlaylist = async (playlistId: string, trackPath: string) => {
+    try {
+      await invoke("remove_track_from_playlist", { playlistId, trackPath });
+      await fetchPlaylists();
+    } catch (e: any) {
+      console.error(e);
+      throw e;
+    }
+  };
+
   return (
-    <LibraryContext.Provider value={{ tracks, collections, isScanning, isInitialized: trackCountRef.current !== -1, diskSpace, scanLibrary, fetchDiskSpace, incrementPlayCount }}>
+    <LibraryContext.Provider value={{ 
+      tracks, 
+      playlists, 
+      isScanning, 
+      isInitialized: trackCountRef.current !== -1, 
+      diskSpace, 
+      scanLibrary, 
+      fetchDiskSpace, 
+      incrementPlayCount,
+      fetchPlaylists,
+      createPlaylist,
+      updatePlaylist,
+      deletePlaylist,
+      addTrackToPlaylist,
+      removeTrackFromPlaylist
+    }}>
       {children}
     </LibraryContext.Provider>
   );

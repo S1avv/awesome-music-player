@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { Search, Menu, X, Play, Music, Edit3, User, Folder } from "lucide-react";
+import { Search, Menu, X, Play, Music, Edit3, User } from "lucide-react";
 import { WindowControls } from "./WindowControls";
 import { useTranslation } from "../../i18n";
 import { useLibrary } from "../../contexts/LibraryContext";
@@ -11,7 +11,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   
-  const { tracks, collections } = useLibrary();
+  const { tracks } = useLibrary();
   const { playTrack } = useAudio();
   const navigate = useNavigate();
 
@@ -37,22 +37,6 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
     setIsMobileSearchOpen(false);
   };
 
-  const handleAlbumClick = (track: any) => {
-    const parts = track.path.split(/[/\\]/);
-    if (parts.length > 1) {
-      const folderPath = parts.slice(0, -1).join('/').replace(/\\/g, '/');
-      const match = collections.find(c => c.id.toLowerCase() === folderPath.toLowerCase());
-      if (match) {
-        navigate(`/playlist/${encodeURIComponent(match.id)}`);
-      } else {
-        navigate(`/playlist/main_library`);
-      }
-    } else {
-      navigate(`/playlist/main_library`);
-    }
-    setQuery("");
-    setIsMobileSearchOpen(false);
-  };
 
   const handleEditClick = (track: any) => {
     navigate(`/track/${encodeURIComponent(track.path)}`);
@@ -122,16 +106,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                   >
                     <User className="w-5 h-5" />
                   </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAlbumClick(track);
-                    }}
-                    className="p-2 hover:bg-white/10 rounded-full transition-all text-light/70 hover:text-light cursor-pointer"
-                    title={t.playlistDetail?.playlist || "Go to Playlist"}
-                  >
-                    <Folder className="w-5 h-5" />
-                  </button>
+
                 </div>
               </div>
             ))}
