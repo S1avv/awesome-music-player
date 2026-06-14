@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "../Sidebar/Sidebar";
 import { Header } from "../Header/Header";
@@ -12,7 +12,17 @@ import { useAudio } from "../../contexts/AudioContext";
 
 export function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const { currentTrack } = useAudio();
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLElement>) => {
+    const scrollTop = e.currentTarget.scrollTop;
+    if (scrollTop <= 10) {
+      if (isCollapsed) setIsCollapsed(false);
+    } else {
+      if (!isCollapsed) setIsCollapsed(true);
+    }
+  }, [isCollapsed]);
 
   const showPlayerBar = currentTrack !== null;
 
@@ -28,12 +38,15 @@ export function Layout() {
         <div className="hidden md:flex shrink-0 flex-col h-full relative z-40">
           <Sidebar />
         </div>
-        <main className="flex-1 flex flex-col h-full overflow-y-auto relative z-0 px-6 md:px-0">
+        <main 
+          className="flex-1 flex flex-col h-full overflow-y-auto relative z-0 px-6 md:px-0 pb-32"
+          onScroll={handleScroll}
+        >
           <Outlet />
         </main>
       </div>
 
-      {showPlayerBar && <PlayerBar />}
+      {showPlayerBar && <PlayerBar isCollapsed={isCollapsed} onExpand={() => setIsCollapsed(false)} />}
       <NowPlaying />
       <PlayingQueue />
 

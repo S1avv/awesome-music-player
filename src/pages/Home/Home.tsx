@@ -18,7 +18,7 @@ export function Home() {
     if (p) setLibraryPath(p as string);
   };
   return (
-    <div className="w-full flex flex-col gap-12 pb-12 overflow-x-hidden">
+    <div className="w-full min-h-full flex flex-col gap-12 pb-12">
       {/* Top Section: Banner + Top Charts */}
       <div className="flex flex-col xl:flex-row gap-8 w-full">
         <div className="flex-1 min-w-0">
@@ -33,7 +33,7 @@ export function Home() {
           <ArtistsSection />
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-16 px-4 text-center bg-dark-alt rounded-[2rem] border border-white/5 mx-2 md:mx-0 animate-fade-in">
+        <div className="flex-1 flex flex-col items-center justify-center py-16 px-4 text-center bg-dark-alt rounded-[2rem] border border-white/5 mx-2 md:mx-0 animate-fade-in">
           <h2 className="text-2xl font-bold text-light mb-3">{t.home.emptyStateTitle}</h2>
           <p className="text-light/50 max-w-md mb-8 leading-relaxed">
             {t.home.emptyStateDesc}
