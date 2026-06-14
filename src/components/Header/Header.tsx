@@ -1,9 +1,10 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { Search, Menu, X, Play, Music, Edit3, User } from "lucide-react";
+import { Search, Menu, X, Play } from "lucide-react";
 import { useTranslation } from "../../i18n";
 import { useLibrary } from "../../contexts/LibraryContext";
 import { useAudio } from "../../contexts/AudioContext";
-import { useNavigate } from "react-router-dom";
+import { TrackCover } from "../Cards/TrackCover";
+import { TrackMenu } from "../ContextMenu/TrackMenu";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
@@ -14,7 +15,6 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
 
   const { tracks } = useLibrary();
   const { playTrack } = useAudio();
-  const navigate = useNavigate();
 
   const searchResults = useMemo(() => {
     if (!query.trim()) return [];
@@ -32,18 +32,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
     setIsMobileSearchOpen(false);
   };
 
-  const handleArtistClick = (artist: string) => {
-    navigate(`/artist/${encodeURIComponent(artist)}`);
-    setQuery("");
-    setIsMobileSearchOpen(false);
-  };
 
-
-  const handleEditClick = (track: any) => {
-    navigate(`/track/${encodeURIComponent(track.path)}`);
-    setQuery("");
-    setIsMobileSearchOpen(false);
-  };
 
   const headerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -57,7 +46,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const SearchDropdown = () => {
+  const searchDropdownContent = (() => {
     if (!query.trim()) return null;
     return (
       <div
@@ -71,12 +60,19 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
             {searchResults.map(track => (
               <div
                 key={track.id}
-                onClick={() => handleTrackClick(track)}
-                className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-xl cursor-pointer group transition-colors"
+                className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-xl group transition-colors"
               >
-                <div className="w-10 h-10 rounded-lg bg-dark flex items-center justify-center shrink-0 text-light/50 group-hover:text-secondary group-hover:bg-secondary/10 transition-colors">
-                  <Music className="w-5 h-5 group-hover:hidden" />
-                  <Play className="w-5 h-5 hidden group-hover:block fill-current" />
+                <div
+                  className="w-10 h-10 rounded-lg bg-dark flex items-center justify-center shrink-0 text-light/50 hover:text-secondary cursor-pointer relative overflow-hidden"
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                    handleTrackClick(track);
+                  }}
+                >
+                  <div className="absolute inset-0 group-hover:opacity-30 transition-opacity">
+                    <TrackCover path={track.path} className="w-full h-full object-cover pointer-events-none" />
+                  </div>
+                  <Play className="w-5 h-5 hidden group-hover:block fill-current relative z-10 drop-shadow-md pointer-events-none" />
                 </div>
                 <div className="flex-1 min-w-0 flex flex-col">
                   <span className="text-light font-bold truncate">{track.title}</span>
@@ -88,27 +84,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                 </div>
 
                 <div className="flex items-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0 bg-dark-alt/80 backdrop-blur-sm rounded-full px-1">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditClick(track);
-                    }}
-                    className="p-2 hover:bg-white/10 rounded-full transition-all text-light/70 hover:text-light cursor-pointer"
-                    title={t.trackDetail?.editTrack || "Edit Track"}
-                  >
-                    <Edit3 className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (track.artist) handleArtistClick(track.artist);
-                    }}
-                    className="p-2 hover:bg-white/10 rounded-full transition-all text-light/70 hover:text-light cursor-pointer"
-                    title={t.artists?.artistLabel || "Go to Artist"}
-                  >
-                    <User className="w-5 h-5" />
-                  </button>
-
+                  <TrackMenu track={track} playlistTracks={searchResults} />
                 </div>
               </div>
             ))}
@@ -116,7 +92,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
         )}
       </div>
     );
-  };
+  })();
 
   return (
     <div className="w-full flex items-center justify-between relative" ref={headerRef}>
@@ -157,7 +133,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
               className="bg-transparent border-none outline-none text-light w-full placeholder:text-light placeholder:opacity-40 font-sans text-base"
               onPointerDown={(e) => e.stopPropagation()}
             />
-            <SearchDropdown />
+            {searchDropdownContent}
           </div>
         )}
       </div>
@@ -225,7 +201,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                 )}
               </AnimatePresence>
 
-              {isDesktopSearchExpanded && <SearchDropdown />}
+              {searchDropdownContent}
             </motion.div>
           </div>
         </div>
