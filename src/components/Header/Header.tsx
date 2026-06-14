@@ -1,16 +1,17 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Search, Menu, X, Play, Music, Edit3, User } from "lucide-react";
-import { WindowControls } from "./WindowControls";
 import { useTranslation } from "../../i18n";
 import { useLibrary } from "../../contexts/LibraryContext";
 import { useAudio } from "../../contexts/AudioContext";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const { t } = useTranslation();
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [isDesktopSearchExpanded, setIsDesktopSearchExpanded] = useState(false);
   const [query, setQuery] = useState("");
-  
+
   const { tracks } = useLibrary();
   const { playTrack } = useAudio();
   const navigate = useNavigate();
@@ -18,9 +19,9 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const searchResults = useMemo(() => {
     if (!query.trim()) return [];
     const q = query.toLowerCase();
-    return tracks.filter(t => 
-      t.title.toLowerCase().includes(q) || 
-      (t.artist || "").toLowerCase().includes(q) || 
+    return tracks.filter(t =>
+      t.title.toLowerCase().includes(q) ||
+      (t.artist || "").toLowerCase().includes(q) ||
       (t.album || "").toLowerCase().includes(q)
     ).slice(0, 10);
   }, [query, tracks]);
@@ -49,6 +50,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
     const handleClickOutside = (e: MouseEvent) => {
       if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
         setQuery("");
+        setIsDesktopSearchExpanded(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -58,7 +60,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const SearchDropdown = () => {
     if (!query.trim()) return null;
     return (
-      <div 
+      <div
         className="absolute top-full left-0 right-0 mt-4 bg-dark-alt border border-white/10 rounded-2xl overflow-hidden z-50 max-h-[60vh] overflow-y-auto pointer-events-auto"
         data-tauri-drag-region="false"
       >
@@ -67,7 +69,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
         ) : (
           <div className="flex flex-col p-2">
             {searchResults.map(track => (
-              <div 
+              <div
                 key={track.id}
                 onClick={() => handleTrackClick(track)}
                 className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-xl cursor-pointer group transition-colors"
@@ -84,7 +86,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
                     <span className="truncate">{track.album || t.playlistDetail.unknownAlbum}</span>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0 bg-dark-alt/80 backdrop-blur-sm rounded-full px-1">
                   <button
                     onClick={(e) => {
@@ -140,8 +142,8 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
           </>
         ) : (
           <div className="flex-1 flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-2 pointer-events-auto animate-fade-in w-full relative">
-            <button 
-              onClick={() => { setIsMobileSearchOpen(false); setQuery(""); }} 
+            <button
+              onClick={() => { setIsMobileSearchOpen(false); setQuery(""); }}
               className="cursor-pointer hover:opacity-100 opacity-50 transition-opacity p-1 -ml-1 shrink-0"
             >
               <X className="w-5 h-5 text-light" />
@@ -161,37 +163,83 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
       </div>
 
       {/* Desktop Header (Hidden on mobile) */}
-      <div className="hidden md:flex items-center justify-between flex-1 pointer-events-none">
-        <div className="w-[4.5rem] flex justify-center shrink-0 pointer-events-auto">
-          <img src="/image.png?v=2" alt="Avatar" className="w-[3.25rem] h-[3.25rem] object-contain bg-dark select-none" />
+      <div className="hidden md:flex items-center justify-between flex-1 pointer-events-none h-8">
+
+        {/* Logo (Avatar) on Left */}
+        <div className="flex justify-center items-center pointer-events-auto shrink-0 ml-4">
+          <img src="/image.png?v=2" alt="Avatar" className="w-[3.25rem] h-[3.25rem] object-contain select-none bg-dark rounded-full" />
         </div>
 
-        {/* Search */}
-        <div className="flex-1 flex items-center gap-4 px-6 py-4 pointer-events-auto relative">
-          <Search className="w-6 h-6 text-light opacity-25" />
-          <input
-            type="text"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder={t.header.searchPlaceholder}
-            className="bg-transparent border-none outline-none text-light w-full placeholder:text-light placeholder:opacity-25 font-sans text-base cursor-text"
-            onPointerDown={(e) => e.stopPropagation()}
-          />
-          <SearchDropdown />
-        </div>
-      </div>
+        {/* Search and Window Controls on Right */}
+        <div className="flex items-center gap-6 shrink-0 pointer-events-none">
 
-      <div className={`pointer-events-auto ml-4 shrink-0 ${isMobileSearchOpen ? 'hidden md:block' : ''}`} onPointerDown={(e) => e.stopPropagation()} data-tauri-drag-region="false">
-        <WindowControls />
+          {/* Search */}
+          <div className="flex items-center pointer-events-auto">
+            <motion.div
+              initial={false}
+              animate={isDesktopSearchExpanded ? "expanded" : "collapsed"}
+              variants={{
+                collapsed: { width: "60px", height: "40px", borderRadius: "9999px" },
+                expanded: { width: "320px", height: "40px", borderRadius: "9999px" }
+              }}
+              transition={{ type: "spring", stiffness: 400, damping: 35 }}
+              className={`relative flex items-center justify-center shadow-xl border border-white/10 z-50 transition-colors duration-300 ${isDesktopSearchExpanded ? 'bg-dark-alt' : 'bg-dark-alt cursor-pointer hover:bg-white/5'}`}
+              onClick={() => {
+                if (!isDesktopSearchExpanded) setIsDesktopSearchExpanded(true);
+              }}
+            >
+              <div className="w-10 h-10 flex items-center justify-center shrink-0">
+                <Search className={`w-4 h-4 transition-colors ${isDesktopSearchExpanded ? 'text-light opacity-50' : 'text-light opacity-80'}`} />
+              </div>
+
+              <AnimatePresence>
+                {isDesktopSearchExpanded && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex-1 h-full flex items-center relative pr-4"
+                  >
+                    <input
+                      autoFocus
+                      type="text"
+                      value={query}
+                      onChange={e => setQuery(e.target.value)}
+                      placeholder={t.header.searchPlaceholder}
+                      className="bg-transparent border-none outline-none text-light w-full placeholder:text-light/40 font-sans text-base cursor-text h-full"
+                      onPointerDown={(e) => e.stopPropagation()}
+                    />
+                    {query && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setQuery("");
+                        }}
+                        className="ml-2 p-1 hover:bg-white/10 rounded-full transition-colors text-light/50 hover:text-light shrink-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {isDesktopSearchExpanded && <SearchDropdown />}
+            </motion.div>
+          </div>
+        </div>
       </div>
 
       {/* Mobile Search Overlay Background (Below Header) */}
-      {isMobileSearchOpen && (
-        <div 
-          className="fixed inset-0 top-[80px] z-[40] bg-dark/80 backdrop-blur-md md:hidden pointer-events-auto transition-all animate-fade-in"
-          onClick={() => setIsMobileSearchOpen(false)}
-        />
-      )}
-    </div>
+      {
+        isMobileSearchOpen && (
+          <div
+            className="fixed inset-0 top-[80px] z-[40] bg-dark/80 backdrop-blur-md md:hidden pointer-events-auto transition-all animate-fade-in"
+            onClick={() => setIsMobileSearchOpen(false)}
+          />
+        )
+      }
+    </div >
   );
 }

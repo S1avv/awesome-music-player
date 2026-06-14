@@ -29,16 +29,16 @@ export function Layout() {
   return (
     <div className="flex flex-col w-full h-screen bg-dark text-light font-sans overflow-hidden relative">
       {/* Header section */}
-      <DragRegion className={`w-full pt-4 md:pt-8 pr-6 md:pr-8 ${isMacOsDesktop() ? 'pl-8' : 'pl-6 md:pl-8'} shrink-0 relative z-50`}>
+      <DragRegion className={`w-full pt-8 md:pt-10 pr-8 md:pr-8 ${isMacOsDesktop() ? 'pl-8' : 'pl-6 md:pl-8'} shrink-0 relative z-50`}>
         <Header onMenuClick={() => setIsMobileMenuOpen(true)} />
       </DragRegion>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 overflow-hidden mt-6 md:mt-10 px-0 md:px-8 gap-12">
+      <div className="flex flex-1 overflow-hidden mt-4 md:mt-6 px-0 md:px-8 gap-12">
         <div className="hidden md:flex shrink-0 flex-col h-full relative z-40">
           <Sidebar />
         </div>
-        <main 
+        <main
           className="flex-1 flex flex-col h-full overflow-y-auto relative z-0 px-6 md:px-0 pb-32"
           onScroll={handleScroll}
         >
