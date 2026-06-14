@@ -3,10 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useLibrary } from "../../contexts/LibraryContext";
 import { useAudio } from "../../contexts/AudioContext";
 import { useTranslation } from "../../i18n";
-import { Play, Pause, Grid, List, ArrowLeft, Clock, Edit3, AudioLines } from "lucide-react";
+import { Play, Pause, Grid, List, ArrowLeft, Clock, AudioLines } from "lucide-react";
 import { MediaCard } from "../../components/Cards/MediaCard";
-import { Link } from "react-router-dom";
 import { TrackCover } from "../../components/Cards/TrackCover";
+import { TrackMenu } from "../../components/ContextMenu/TrackMenu";
 
 function formatTime(seconds: number) {
   if (isNaN(seconds) || !isFinite(seconds)) return "0:00";
@@ -123,6 +123,8 @@ export function ArtistDetail() {
                   titleHref={`/track/${encodeURIComponent(track.path)}`}
                   isCurrentTrack={currentTrack?.id === track.id}
                   isPlaying={isPlaying}
+                  track={track}
+                  playlistTracks={artistTracks}
                   onPlayPauseClick={(e) => {
                     e.stopPropagation();
                     if (currentTrack?.id === track.id) {
@@ -138,12 +140,13 @@ export function ArtistDetail() {
         ) : (
           <div className="flex flex-col w-full">
             {/* Table Header */}
-            <div className="grid grid-cols-[2.5rem_1fr_3.75rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem] gap-4 px-6 py-4 border-b border-white/5 text-light/50 text-sm font-semibold uppercase tracking-wider mb-2">
+            <div className="grid grid-cols-[2.5rem_1fr_3.75rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_3rem] gap-4 px-6 py-4 border-b border-white/5 text-light/50 text-sm font-semibold uppercase tracking-wider mb-2">
               <div>#</div>
               <div>{(t as any).playlistDetail?.track || "TITLE"}</div>
               <div className="hidden md:block">{(t as any).playlistDetail?.artist || "ARTIST"}</div>
               <div className="hidden lg:block">{(t as any).playlistDetail?.album || "ALBUM"}</div>
               <div className="flex justify-end"><Clock className="w-4 h-4" /></div>
+              <div></div>
             </div>
 
             {/* Table Rows */}
@@ -156,7 +159,7 @@ export function ArtistDetail() {
                   if (isCurrent) togglePlayPause();
                   else playTrack(track, artistTracks);
                 }}
-                className={`grid grid-cols-[2.5rem_1fr_3.75rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem] gap-4 px-6 py-4 items-center rounded-xl transition-colors group cursor-pointer ${isCurrent ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                className={`grid grid-cols-[2.5rem_1fr_3.75rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_3rem] gap-4 px-6 py-4 items-center rounded-xl transition-colors group cursor-pointer ${isCurrent ? 'bg-white/10' : 'hover:bg-white/5'}`}
               >
                 {/* # or Play/Pause Icon */}
                 <div className="flex items-center justify-center w-full">
@@ -174,14 +177,6 @@ export function ArtistDetail() {
                 
                 <div className="font-bold text-light truncate flex items-center gap-2">
                   <span>{track.title}</span>
-                  <Link 
-                    to={`/track/${encodeURIComponent(track.path)}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded transition-all text-light/50 hover:text-light"
-                    title="Edit Track"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                  </Link>
                 </div>
                 <div className="hidden md:block text-light/70 truncate">
                   {track.artist || t.home.unknownArtist}
@@ -191,6 +186,11 @@ export function ArtistDetail() {
                 </div>
                 <div className="text-light/50 text-right text-sm">
                   {track.duration ? formatTime(track.duration) : '--:--'}
+                </div>
+                <div className="flex items-center justify-end">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <TrackMenu track={track} playlistTracks={artistTracks} />
+                  </div>
                 </div>
               </div>
             )})}

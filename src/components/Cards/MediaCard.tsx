@@ -1,6 +1,8 @@
-import { Play, Pause, Edit3 } from "lucide-react";
+import { Play, Pause } from "lucide-react";
 import { Link } from "react-router-dom";
 import { TrackCover } from "./TrackCover";
+import { TrackMenu } from "../ContextMenu/TrackMenu";
+import { Track } from "../../contexts/LibraryContext";
 
 interface MediaCardProps {
   image?: string;
@@ -13,9 +15,11 @@ interface MediaCardProps {
   isPlaying?: boolean;
   playCount?: number;
   onPlayPauseClick?: (e: React.MouseEvent) => void;
+  track?: Track;
+  playlistTracks?: Track[];
 }
 
-export function MediaCard({ image = "/PhonographRecord.png", title, subtitle, onClick, titleHref, trackPath, isCurrentTrack, isPlaying, playCount, onPlayPauseClick }: MediaCardProps) {
+export function MediaCard({ image = "/PhonographRecord.png", title, subtitle, onClick, titleHref, trackPath, isCurrentTrack, isPlaying, playCount, onPlayPauseClick, track, playlistTracks }: MediaCardProps) {
   return (
     <div 
       className="group flex flex-col gap-3 w-full cursor-pointer snap-start"
@@ -61,15 +65,10 @@ export function MediaCard({ image = "/PhonographRecord.png", title, subtitle, on
           ) : (
             <h4 className="text-light font-bold truncate text-base md:text-lg flex-1">{title}</h4>
           )}
-          {titleHref && trackPath && (
-            <Link 
-              to={`/track/${encodeURIComponent(trackPath)}`}
-              onClick={(e) => e.stopPropagation()}
-              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded transition-all text-light/50 hover:text-light shrink-0"
-              title="Edit Track"
-            >
-              <Edit3 className="w-4 h-4" />
-            </Link>
+          {titleHref && trackPath && track && (
+            <div className="flex items-center gap-1">
+              <TrackMenu track={track} playlistTracks={playlistTracks} />
+            </div>
           )}
         </div>
         <p className="text-light/50 text-sm md:text-base font-medium truncate">{subtitle}</p>

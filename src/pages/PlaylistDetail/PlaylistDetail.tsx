@@ -5,9 +5,9 @@ import { invoke } from "@tauri-apps/api/core";
 import { useLibrary } from "../../contexts/LibraryContext";
 import { useAudio } from "../../contexts/AudioContext";
 import { useTranslation } from "../../i18n";
-import { Play, Pause, Grid, List, ArrowLeft, Clock, Pencil, X, Edit3, AudioLines } from "lucide-react";
+import { Play, Pause, Grid, List, ArrowLeft, Clock, Pencil, X, AudioLines } from "lucide-react";
 import { MediaCard } from "../../components/Cards/MediaCard";
-import { Link } from "react-router-dom";
+import { TrackMenu } from "../../components/ContextMenu/TrackMenu";
 
 function formatTime(seconds: number) {
   if (isNaN(seconds) || !isFinite(seconds)) return "0:00";
@@ -186,6 +186,8 @@ export function PlaylistDetail() {
                   isCurrentTrack={currentTrack?.id === track.id}
                   isPlaying={isPlaying}
                   playCount={decodedId === 'most_played' ? track.play_count : undefined}
+                  track={track}
+                  playlistTracks={playlistTracks}
                   onPlayPauseClick={(e) => {
                     e.stopPropagation();
                     if (currentTrack?.id === track.id) {
@@ -201,13 +203,14 @@ export function PlaylistDetail() {
         ) : (
           <div className="flex flex-col w-full">
             {/* Table Header */}
-            <div className={`grid ${decodedId === 'most_played' ? 'grid-cols-[2.5rem_1fr_3.75rem_4rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_4rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_4rem]' : 'grid-cols-[2.5rem_1fr_3.75rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem]'} gap-4 px-6 py-4 border-b border-white/5 text-light/50 text-sm font-semibold uppercase tracking-wider mb-2`}>
+            <div className={`grid ${decodedId === 'most_played' ? 'grid-cols-[2.5rem_1fr_3.75rem_4rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_4rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_4rem_3rem]' : 'grid-cols-[2.5rem_1fr_3.75rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_3rem]'} gap-4 px-6 py-4 border-b border-white/5 text-light/50 text-sm font-semibold uppercase tracking-wider mb-2`}>
               <div>#</div>
               <div>{(t as any).playlistDetail?.track || "TITLE"}</div>
               <div className="hidden md:block">{(t as any).playlistDetail?.artist || "ARTIST"}</div>
               <div className="hidden lg:block">{(t as any).playlistDetail?.album || "ALBUM"}</div>
               <div className="flex justify-end"><Clock className="w-4 h-4" /></div>
               {decodedId === 'most_played' && <div className="text-right">{t.playlistDetail.plays}</div>}
+              <div></div>
             </div>
 
             {/* Table Rows */}
@@ -220,7 +223,7 @@ export function PlaylistDetail() {
                   if (isCurrent) togglePlayPause();
                   else playTrack(track, playlistTracks);
                 }}
-                className={`grid ${decodedId === 'most_played' ? 'grid-cols-[2.5rem_1fr_3.75rem_4rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_4rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_4rem]' : 'grid-cols-[2.5rem_1fr_3.75rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem]'} gap-4 px-6 py-4 items-center rounded-xl transition-colors group cursor-pointer ${isCurrent ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                className={`grid ${decodedId === 'most_played' ? 'grid-cols-[2.5rem_1fr_3.75rem_4rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_4rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_4rem_3rem]' : 'grid-cols-[2.5rem_1fr_3.75rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_3rem]'} gap-4 px-6 py-4 items-center rounded-xl transition-colors group cursor-pointer ${isCurrent ? 'bg-white/10' : 'hover:bg-white/5'}`}
               >
                 <div className={`font-medium group-hover:hidden ${isCurrent ? 'text-secondary' : 'text-light/50'}`}>
                   {isCurrent && isPlaying ? <AudioLines className="w-4 h-4 text-secondary animate-pulse" /> : index + 1}
@@ -235,14 +238,6 @@ export function PlaylistDetail() {
                 
                 <div className="font-bold text-light truncate flex items-center gap-2">
                   <span>{track.title}</span>
-                  <Link 
-                    to={`/track/${encodeURIComponent(track.path)}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded transition-all text-light/50 hover:text-light"
-                    title="Edit Track"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                  </Link>
                 </div>
                 <div className="hidden md:block text-light/70 truncate">
                   {track.artist || t.home.unknownArtist}
@@ -258,6 +253,11 @@ export function PlaylistDetail() {
                     {track.play_count || 0}
                   </div>
                 )}
+                <div className="flex items-center justify-end">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <TrackMenu track={track} playlistTracks={playlistTracks} />
+                  </div>
+                </div>
               </div>
             )})}
           </div>

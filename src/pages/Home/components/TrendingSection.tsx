@@ -28,6 +28,8 @@ export function TrendingSection() {
             titleHref={`/track/${encodeURIComponent(item.path)}`}
             isCurrentTrack={currentTrack?.id === item.id}
             isPlaying={isPlaying}
+            track={item}
+            playlistTracks={recentTracks}
             onPlayPauseClick={(e) => {
                e.stopPropagation();
                if (currentTrack?.id === item.id) {

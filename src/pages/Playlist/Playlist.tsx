@@ -1,14 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate, Link, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { useSettings } from "../../hooks/useSettings";
 import { useTranslation } from "../../i18n";
 import { useLibrary } from "../../contexts/LibraryContext";
 import { useAudio } from "../../contexts/AudioContext";
-import { Plus, X, Play, Pause, Grid, List, Clock, Edit3, ChevronDown, AudioLines } from "lucide-react";
+import { Plus, X, Play, Pause, Grid, List, Clock, ChevronDown, AudioLines } from "lucide-react";
 import { MediaCard } from "../../components/Cards/MediaCard";
 import { formatTime } from "../../utils/formatTime";
+import { TrackMenu } from "../../components/ContextMenu/TrackMenu";
 
 export function Playlist() {
   const { t } = useTranslation();
@@ -226,6 +227,8 @@ export function Playlist() {
                     isCurrentTrack={currentTrack?.id === track.id}
                     isPlaying={isPlaying}
                     playCount={activeTab === 'most_played' ? track.play_count : undefined}
+                    track={track}
+                    playlistTracks={playlistTracks}
                     onPlayPauseClick={(e) => {
                       e.stopPropagation();
                       if (currentTrack?.id === track.id) {
@@ -241,13 +244,14 @@ export function Playlist() {
           ) : (
             <div className="flex flex-col w-full">
               {/* Table Header */}
-              <div className={`grid ${activeTab === 'most_played' ? 'grid-cols-[2.5rem_1fr_3.75rem_4rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_4rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_4rem]' : 'grid-cols-[2.5rem_1fr_3.75rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem]'} gap-4 px-6 py-4 border-b border-white/5 text-light/50 text-sm font-semibold uppercase tracking-wider mb-2`}>
+              <div className={`grid ${activeTab === 'most_played' ? 'grid-cols-[2.5rem_1fr_3.75rem_4rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_4rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_4rem_3rem]' : 'grid-cols-[2.5rem_1fr_3.75rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_3rem]'} gap-4 px-6 py-4 border-b border-white/5 text-light/50 text-sm font-semibold uppercase tracking-wider mb-2`}>
                 <div>#</div>
                 <div>{(t as any).playlistDetail?.track || "TITLE"}</div>
                 <div className="hidden md:block">{(t as any).playlistDetail?.artist || "ARTIST"}</div>
                 <div className="hidden lg:block">{(t as any).playlistDetail?.album || "ALBUM"}</div>
                 <div className="flex justify-end"><Clock className="w-4 h-4" /></div>
                 {activeTab === 'most_played' && <div className="text-right">{t.playlistDetail.plays}</div>}
+                <div></div>
               </div>
 
               {/* Table Rows */}
@@ -260,7 +264,7 @@ export function Playlist() {
                     if (isCurrent) togglePlayPause();
                     else playTrack(track, playlistTracks);
                   }}
-                  className={`grid ${activeTab === 'most_played' ? 'grid-cols-[2.5rem_1fr_3.75rem_4rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_4rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_4rem]' : 'grid-cols-[2.5rem_1fr_3.75rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem]'} gap-4 px-6 py-4 items-center rounded-xl transition-colors group cursor-pointer ${isCurrent ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                  className={`grid ${activeTab === 'most_played' ? 'grid-cols-[2.5rem_1fr_3.75rem_4rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_4rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_4rem_3rem]' : 'grid-cols-[2.5rem_1fr_3.75rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_3rem]'} gap-4 px-6 py-4 items-center rounded-xl transition-colors group cursor-pointer ${isCurrent ? 'bg-white/10' : 'hover:bg-white/5'}`}
                 >
                   <div className={`font-medium group-hover:hidden ${isCurrent ? 'text-secondary' : 'text-light/50'}`}>
                     {isCurrent && isPlaying ? <AudioLines className="w-4 h-4 text-secondary animate-pulse" /> : index + 1}
@@ -275,14 +279,6 @@ export function Playlist() {
                   
                   <div className="font-bold text-light truncate flex items-center gap-2">
                     <span>{track.title}</span>
-                    <Link 
-                      to={`/track/${encodeURIComponent(track.path)}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded transition-all text-light/50 hover:text-light"
-                      title="Edit Track"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </Link>
                   </div>
                   <div className="hidden md:block text-light/70 truncate">
                     {track.artist || t.home.unknownArtist}
@@ -298,6 +294,11 @@ export function Playlist() {
                       {track.play_count || 0}
                     </div>
                   )}
+                  <div className="flex items-center justify-end">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <TrackMenu track={track} playlistTracks={playlistTracks} />
+                    </div>
+                  </div>
                 </div>
                 );
               })}

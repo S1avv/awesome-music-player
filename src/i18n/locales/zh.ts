@@ -72,5 +72,6 @@
     lang: { en: "English", ru: "Русский", es: "Español", de: "Deutsch", fr: "Français", uk: "Українська", zh: "中文", ja: "日本語" }
   },
   library: { newTracks: "检测到新曲目：已添加 {count} 首", tracksRemoved: "已移除曲目：{count} 首" }
+,
+  queue: { title: "Playing Queue", clear: "Clear Queue", add: "Add to Queue", playNext: "Play Next", empty: "Queue is empty." }
 };
-

@@ -27,6 +27,14 @@ interface AudioContextType {
   toggleShuffle: () => void;
   isNowPlayingOpen: boolean;
   setIsNowPlayingOpen: (open: boolean) => void;
+  addToQueue: (track: Track) => void;
+  playNext: (track: Track) => void;
+  removeFromQueue: (index: number) => void;
+  clearQueue: () => void;
+  reorderQueue: (startIndex: number, endIndex: number) => void;
+  isQueueOpen: boolean;
+  setIsQueueOpen: (open: boolean) => void;
+  setQueue: (queue: Track[]) => void;
 }
 
 const AudioContext = createContext<AudioContextType | undefined>(undefined);
@@ -76,6 +84,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       seek: playback.seek,
       toggleRepeat: () => state.setRepeatMode(prev => prev === "off" ? "all" : prev === "all" ? "one" : "off"),
       toggleShuffle: () => state.setIsShuffled(prev => !prev),
+      addToQueue: playback.addToQueue,
+      playNext: playback.playNext,
+      removeFromQueue: playback.removeFromQueue,
+      clearQueue: playback.clearQueue,
+      reorderQueue: playback.reorderQueue,
+      setQueue: state.setQueue,
     }}>
       {children}
     </AudioContext.Provider>

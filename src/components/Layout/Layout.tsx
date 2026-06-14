@@ -6,6 +6,7 @@ import { DragRegion } from "../Header/DragRegion";
 import { MobileMenu } from "../Sidebar/MobileMenu";
 import { PlayerBar } from "../Player/PlayerBar";
 import { NowPlaying } from "../Player/NowPlaying";
+import { PlayingQueue } from "../Player/PlayingQueue";
 import { isMacOsDesktop } from "../../utils/env";
 import { useAudio } from "../../contexts/AudioContext";
 
@@ -34,6 +35,7 @@ export function Layout() {
 
       {showPlayerBar && <PlayerBar />}
       <NowPlaying />
+      <PlayingQueue />
 
       <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
     </div>

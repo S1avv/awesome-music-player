@@ -101,6 +101,8 @@ export function Upload() {
                   titleHref={`/track/${encodeURIComponent(track.path)}`}
                   isCurrentTrack={currentTrack?.id === track.id}
                   isPlaying={isPlaying}
+                  track={track}
+                  playlistTracks={tracks}
                   onPlayPauseClick={(e) => {
                     e.stopPropagation();
                     if (currentTrack?.id === track.id) {

@@ -1,4 +1,4 @@
-import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Volume2, VolumeX, MoreHorizontal } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Volume2, VolumeX, MoreHorizontal, ListMusic } from "lucide-react";
 import { useAudio } from "../../contexts/AudioContext";
 import { useState } from "react";
 import { TrackCover } from "../Cards/TrackCover";
@@ -23,7 +23,9 @@ export function PlayerBar() {
     toggleRepeat,
     toggleShuffle,
     setIsNowPlayingOpen,
-    queue
+    queue,
+    isQueueOpen,
+    setIsQueueOpen
   } = useAudio();
 
   const { t } = useTranslation();
@@ -140,8 +142,15 @@ export function PlayerBar() {
             </button>
           </div>
 
-          {/* Right: Volume (Desktop) */}
+          {/* Right: Volume & Queue (Desktop) */}
           <div className="hidden md:flex items-center justify-end gap-4 w-1/3">
+            <button 
+              onClick={() => setIsQueueOpen(!isQueueOpen)} 
+              className={`queue-toggle-btn text-light/80 hover:text-light transition-colors ${isQueueOpen ? 'text-secondary drop-shadow-[0_0_8px_currentColor]' : ''}`}
+              title="Playing Queue"
+            >
+              <ListMusic className="w-4 h-4 md:w-5 md:h-5" />
+            </button>
             <button onClick={() => setVolume(volume === 0 ? 1 : 0)} className="text-light/80 hover:text-light transition-colors">
               {volume === 0 ? <VolumeX className="w-4 h-4 md:w-5 md:h-5" /> : <Volume2 className="w-4 h-4 md:w-5 md:h-5" />}
             </button>
@@ -214,6 +223,13 @@ export function PlayerBar() {
             >
               <Shuffle className="w-5 h-5" />
               <span className="text-[10px] font-bold">Shuffle</span>
+            </button>
+            <button
+              onClick={() => setIsQueueOpen(!isQueueOpen)}
+              className={`queue-toggle-btn transition-colors flex flex-col items-center gap-1 ${isQueueOpen ? 'text-secondary drop-shadow-[0_0_8px_currentColor]' : 'text-light/50 hover:text-light'}`}
+            >
+              <ListMusic className="w-5 h-5" />
+              <span className="text-[10px] font-bold">Queue</span>
             </button>
             <button
               onClick={toggleRepeat}
