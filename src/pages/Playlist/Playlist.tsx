@@ -89,9 +89,9 @@ export function Playlist() {
   };
 
   return (
-    <div className="w-full flex flex-col gap-8 pb-12 animate-fade-in">
+    <div className="w-full flex flex-col gap-4 pb-12 animate-fade-in">
       {/* Tabs */}
-      <div className="flex items-center gap-4">
+      <div className="sticky top-0 z-30 bg-dark/95 backdrop-blur-xl pt-2 pb-4 -mx-6 px-6 md:mx-0 md:px-0 flex items-center gap-4 border-b border-transparent">
         {/* Mobile Dropdown (shown only on small screens) */}
         <div className="relative md:hidden min-w-[200px]" ref={dropdownRef}>
           <div 
@@ -270,7 +270,7 @@ export function Playlist() {
           ) : (
             <div className="flex flex-col w-full">
               {/* Table Header */}
-              <div className={`grid ${activeTab === 'most_played' ? 'grid-cols-[2.5rem_1fr_3.75rem_4rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_4rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_4rem_3rem]' : 'grid-cols-[2.5rem_1fr_3.75rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_3rem]'} gap-4 px-6 py-4 border-b border-white/5 text-light/50 text-sm font-semibold uppercase tracking-wider mb-2`}>
+              <div className={`grid ${activeTab === 'most_played' ? 'grid-cols-[2.5rem_1fr_3.75rem_4rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_4rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_4rem_3rem]' : 'grid-cols-[2.5rem_1fr_3.75rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_3rem]'} gap-4 px-6 py-4 border-b border-white/5 text-light/50 text-sm font-semibold uppercase tracking-wider mb-2 sticky top-[72px] md:top-[64px] z-20 bg-dark/95 backdrop-blur-xl -mx-6 md:mx-0`}>
                 <div>#</div>
                 <button onClick={() => handleSort('title')} className="text-left flex items-center hover:text-light transition-colors">{(t as any).playlistDetail?.track || "TITLE"}<SortIcon columnKey="title" /></button>
                 <button onClick={() => handleSort('artist')} className="hidden md:flex items-center text-left hover:text-light transition-colors">{(t as any).playlistDetail?.artist || "ARTIST"}<SortIcon columnKey="artist" /></button>
