@@ -6,7 +6,7 @@ import { useLibrary } from "../../contexts/LibraryContext";
 import { useNotification } from "../../contexts/NotificationContext";
 import { useTranslation } from "../../i18n";
 import { ArrowLeft, Save, Music, User, Disc, Search, Check, Trash2 } from "lucide-react";
-import { CoverSearchModal } from "./components/CoverSearchModal";
+import { CoverSearchModal } from "../../components/Modals/CoverSearchModal";
 
 
 export function TrackDetail() {

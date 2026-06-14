@@ -7,6 +7,7 @@ import { useLibrary } from "../../contexts/LibraryContext";
 import { useAudio } from "../../contexts/AudioContext";
 import { Plus, X, Play, Pause, Grid, List, Clock, ChevronDown, AudioLines } from "lucide-react";
 import { MediaCard } from "../../components/Cards/MediaCard";
+import { PlaylistCover } from "../../components/Cards/PlaylistCover";
 import { formatTime } from "../../utils/formatTime";
 import { TrackMenu } from "../../components/ContextMenu/TrackMenu";
 
@@ -16,8 +17,8 @@ export function Playlist() {
   const { playlists, tracks, createPlaylist } = useLibrary();
   const { playTrack, currentTrack, isPlaying, togglePlayPause } = useAudio();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState<"my_collection" | "recently_added" | "most_played">(
-    (location.state as any)?.tab || "my_collection"
+  const [activeTab, setActiveTab] = useState<"recently_added" | "my_collection" | "most_played">(
+    (location.state as any)?.tab || "recently_added"
   );
 
   useEffect(() => {
@@ -45,8 +46,8 @@ export function Playlist() {
   }, []);
 
   const tabOptions = [
-    { id: "my_collection", label: t.playlist?.myCollection || "My collection" },
     { id: "recently_added", label: t.playlist?.recentlyAdded || "Recently Added" },
+    { id: "my_collection", label: t.playlist?.myCollection || "Playlists" },
     { id: "most_played", label: t.playlist?.mostPlayed || "Most Played Tracks" },
   ] as const;
   
@@ -103,16 +104,6 @@ export function Playlist() {
         {/* Desktop Buttons (shown only on medium screens and larger) */}
         <div className="hidden md:flex items-center gap-4">
           <button 
-            onClick={() => setActiveTab("my_collection")}
-            className={`px-6 py-2 rounded-full font-semibold transition-colors ${
-              activeTab === "my_collection" 
-                ? "bg-secondary text-dark" 
-                : "bg-transparent text-light/70 border border-white/20 hover:border-white/40"
-            }`}
-          >
-            {t.playlist?.myCollection || "My collection"}
-          </button>
-          <button 
             onClick={() => setActiveTab("recently_added")}
             className={`px-6 py-2 rounded-full font-semibold transition-colors ${
               activeTab === "recently_added" 
@@ -121,6 +112,16 @@ export function Playlist() {
             }`}
           >
             {t.playlist?.recentlyAdded || "Recently Added"}
+          </button>
+          <button 
+            onClick={() => setActiveTab("my_collection")}
+            className={`px-6 py-2 rounded-full font-semibold transition-colors ${
+              activeTab === "my_collection" 
+                ? "bg-secondary text-dark" 
+                : "bg-transparent text-light/70 border border-white/20 hover:border-white/40"
+            }`}
+          >
+            {t.playlist?.myCollection || "Playlists"}
           </button>
           <button 
             onClick={() => setActiveTab("most_played")}
@@ -184,9 +185,11 @@ export function Playlist() {
               className="relative aspect-square rounded-[2rem] overflow-hidden group cursor-pointer transition-all min-w-0"
             >
               {/* Background */}
-              <div 
-                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110 bg-dark"
-                style={{ backgroundImage: `url('${playlist.cover_path || '/PhonographRecord.png'}')` }}
+              <PlaylistCover 
+                playlist={playlist}
+                allTracks={tracks}
+                className="absolute inset-0 transition-transform duration-700 group-hover:scale-110 bg-dark"
+                fallbackImage="/PhonographRecord.png"
               />
               
               {/* Overlay Gradient */}

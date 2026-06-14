@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Volume2, VolumeX } from "lucide-react";
+import { ChevronDown, Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Volume2, VolumeX, ListPlus } from "lucide-react";
 import { useAudio } from "../../contexts/AudioContext";
 import { TrackCover } from "../Cards/TrackCover";
+import { AddToPlaylistModal } from "../Modals/AddToPlaylistModal";
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
@@ -35,6 +36,7 @@ export function NowPlaying() {
   } = useAudio();
 
   const [coverUrl, setCoverUrl] = useState<string>("/PhonographRecord.png");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   useEffect(() => {
     if (currentTrack?.path) {
@@ -79,7 +81,14 @@ export function NowPlaying() {
             <div className="text-light/70 text-sm font-bold tracking-widest uppercase pointer-events-none" data-tauri-drag-region="true">
               Now Playing
             </div>
-            <div className="w-12 h-12" /> {/* Spacer to balance flex-between */}
+            <button
+              onClick={() => currentTrack && setIsAddModalOpen(true)}
+              disabled={!currentTrack}
+              className="p-3 bg-white/10 hover:bg-white/20 rounded-full backdrop-blur-md transition-colors text-light cursor-pointer group disabled:opacity-50"
+              title="Add to Playlist"
+            >
+              <ListPlus className="w-6 h-6" />
+            </button>
           </div>
 
           {/* Main Content */}
@@ -201,6 +210,11 @@ export function NowPlaying() {
 
             </div>
           </div>
+          <AddToPlaylistModal 
+            isOpen={isAddModalOpen} 
+            onClose={() => setIsAddModalOpen(false)} 
+            trackPath={currentTrack?.path || ""} 
+          />
         </motion.div>
       )}
     </AnimatePresence>

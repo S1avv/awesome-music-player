@@ -59,7 +59,7 @@ export function useAudioLifecycle({
     const savedStateStr = localStorage.getItem("mucis_playback_state");
     if (savedStateStr) {
       try {
-        const { track, time, playing } = JSON.parse(savedStateStr);
+        const { track, time } = JSON.parse(savedStateStr);
         if (track) {
           setCurrentTrack(track);
           
@@ -82,13 +82,8 @@ export function useAudioLifecycle({
             audio.currentTime = time || 0;
             setCurrentTime(time || 0);
             
-            if (playing) {
-              audio.play().catch(e => {
-                if (e.name !== 'AbortError') {
-                  console.error("Autoplay blocked on restore", e);
-                }
-              });
-            }
+            // Deliberately do not call audio.play() even if playing was true,
+            // so the application always opens in a paused state.
           };
           setupAudio();
         }

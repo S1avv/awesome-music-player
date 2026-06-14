@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { MoreHorizontal, Play, ListPlus, ArrowRightToLine, Edit3 } from "lucide-react";
 import { useAudio } from "../../contexts/AudioContext";
-import { Track, useLibrary } from "../../contexts/LibraryContext";
+import { Track } from "../../contexts/LibraryContext";
 import { useTranslation } from "../../i18n";
 import { useNavigate } from "react-router-dom";
+import { AddToPlaylistModal } from "../Modals/AddToPlaylistModal";
 
 export function TrackMenu({ track, playlistTracks }: { track: Track, playlistTracks?: Track[] }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,8 +13,7 @@ export function TrackMenu({ track, playlistTracks }: { track: Track, playlistTra
   const { playTrack, playNext, addToQueue, currentTrack, togglePlayPause } = useAudio();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { playlists, addTrackToPlaylist } = useLibrary();
-  const [showPlaylists, setShowPlaylists] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -21,11 +21,11 @@ export function TrackMenu({ track, playlistTracks }: { track: Track, playlistTra
         setIsOpen(false);
       }
     };
-    if (isOpen) {
+    if (isOpen && !isAddModalOpen) {
       document.addEventListener("click", handleClickOutside);
     }
     return () => document.removeEventListener("click", handleClickOutside);
-  }, [isOpen]);
+  }, [isOpen, isAddModalOpen]);
 
   const handlePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -55,13 +55,6 @@ export function TrackMenu({ track, playlistTracks }: { track: Track, playlistTra
     setIsOpen(false);
   };
 
-  const handleAddToPlaylist = async (playlistId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    await addTrackToPlaylist(playlistId, track.path);
-    setIsOpen(false);
-    setShowPlaylists(false);
-  };
-
   return (
     <div className="relative" onClick={(e) => e.stopPropagation()}>
       <button
@@ -69,7 +62,6 @@ export function TrackMenu({ track, playlistTracks }: { track: Track, playlistTra
         onClick={(e) => {
           e.stopPropagation();
           setIsOpen(!isOpen);
-          setShowPlaylists(false);
         }}
         className="p-1.5 text-light/50 hover:text-light hover:bg-white/10 rounded transition-all opacity-0 group-hover:opacity-100"
         title="More Options"
@@ -82,59 +74,37 @@ export function TrackMenu({ track, playlistTracks }: { track: Track, playlistTra
           ref={menuRef}
           className="absolute right-0 top-full mt-1 w-48 bg-dark-alt/95 backdrop-blur-xl border border-white/10 rounded-xl py-1 z-[100] shadow-xl animate-fade-in"
         >
-          {showPlaylists ? (
-            <>
-              <button 
-                onClick={(e) => { e.stopPropagation(); setShowPlaylists(false); }}
-                className="w-full text-left px-4 py-2.5 text-sm text-light/50 hover:text-light hover:bg-white/10 flex items-center gap-3 transition-colors border-b border-white/5 mb-1"
-              >
-                ← Back
-              </button>
-              <div className="max-h-48 overflow-y-auto">
-                {playlists.filter(p => p.id !== 'main_library').length === 0 ? (
-                  <div className="px-4 py-2 text-xs text-light/50">No playlists available</div>
-                ) : (
-                  playlists.filter(p => p.id !== 'main_library').map(p => (
-                    <button 
-                      key={p.id}
-                      onClick={(e) => handleAddToPlaylist(p.id, e)}
-                      className="w-full text-left px-4 py-2.5 text-sm text-light/80 hover:text-light hover:bg-white/10 transition-colors truncate"
-                    >
-                      {p.name}
-                    </button>
-                  ))
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <button onClick={handlePlay} className="w-full text-left px-4 py-2.5 text-sm text-light/80 hover:text-light hover:bg-white/10 flex items-center gap-3 transition-colors">
-                <Play className="w-4 h-4" />
-                Play
-              </button>
-              <button onClick={handlePlayNext} className="w-full text-left px-4 py-2.5 text-sm text-light/80 hover:text-light hover:bg-white/10 flex items-center gap-3 transition-colors">
-                <ArrowRightToLine className="w-4 h-4" />
-                {(t as any).queue?.playNext || "Play Next"}
-              </button>
-              <button onClick={handleAddToQueue} className="w-full text-left px-4 py-2.5 text-sm text-light/80 hover:text-light hover:bg-white/10 flex items-center gap-3 transition-colors">
-                <ListPlus className="w-4 h-4" />
-                {(t as any).queue?.add || "Add to Queue"}
-              </button>
-              <button 
-                onClick={(e) => { e.stopPropagation(); setShowPlaylists(true); }}
-                className="w-full text-left px-4 py-2.5 text-sm text-light/80 hover:text-light hover:bg-white/10 flex items-center gap-3 transition-colors border-b border-white/5"
-              >
-                <ListPlus className="w-4 h-4" />
-                Add to Playlist...
-              </button>
-              <button onClick={handleEdit} className="w-full text-left px-4 py-2.5 text-sm text-light/80 hover:text-light hover:bg-white/10 flex items-center gap-3 transition-colors mt-1">
-                <Edit3 className="w-4 h-4" />
-                {(t as any).trackDetail?.editTrack || "Edit Track"}
-              </button>
-            </>
-          )}
+          <button onClick={handlePlay} className="w-full text-left px-4 py-2.5 text-sm text-light/80 hover:text-light hover:bg-white/10 flex items-center gap-3 transition-colors">
+            <Play className="w-4 h-4" />
+            Play
+          </button>
+          <button onClick={handlePlayNext} className="w-full text-left px-4 py-2.5 text-sm text-light/80 hover:text-light hover:bg-white/10 flex items-center gap-3 transition-colors">
+            <ArrowRightToLine className="w-4 h-4" />
+            {(t as any).queue?.playNext || "Play Next"}
+          </button>
+          <button onClick={handleAddToQueue} className="w-full text-left px-4 py-2.5 text-sm text-light/80 hover:text-light hover:bg-white/10 flex items-center gap-3 transition-colors">
+            <ListPlus className="w-4 h-4" />
+            {(t as any).queue?.add || "Add to Queue"}
+          </button>
+          <button 
+            onClick={(e) => { e.stopPropagation(); setIsAddModalOpen(true); setIsOpen(false); }}
+            className="w-full text-left px-4 py-2.5 text-sm text-light/80 hover:text-light hover:bg-white/10 flex items-center gap-3 transition-colors border-b border-white/5"
+          >
+            <ListPlus className="w-4 h-4" />
+            {(t as any).playlistDetail?.addToPlaylist || "Add to Playlist..."}
+          </button>
+          <button onClick={handleEdit} className="w-full text-left px-4 py-2.5 text-sm text-light/80 hover:text-light hover:bg-white/10 flex items-center gap-3 transition-colors mt-1">
+            <Edit3 className="w-4 h-4" />
+            {(t as any).trackDetail?.editTrack || "Edit Track"}
+          </button>
         </div>
       )}
+
+      <AddToPlaylistModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+        trackPath={track.path} 
+      />
     </div>
   );
 }

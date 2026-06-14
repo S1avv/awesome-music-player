@@ -1,7 +1,8 @@
-import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Volume2, VolumeX, MoreHorizontal, ListMusic } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Volume2, VolumeX, MoreHorizontal, ListMusic, ListPlus } from "lucide-react";
 import { useAudio } from "../../contexts/AudioContext";
 import { useState } from "react";
 import { TrackCover } from "../Cards/TrackCover";
+import { AddToPlaylistModal } from "../Modals/AddToPlaylistModal";
 import { useTranslation } from "../../i18n";
 import { formatTime } from "../../utils/formatTime";
 
@@ -32,6 +33,7 @@ export function PlayerBar() {
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   if (isCollapsed) {
     return (
@@ -145,6 +147,14 @@ export function PlayerBar() {
           {/* Right: Volume & Queue (Desktop) */}
           <div className="hidden md:flex items-center justify-end gap-4 w-1/3">
             <button 
+              onClick={() => currentTrack && setIsAddModalOpen(true)} 
+              disabled={!currentTrack}
+              className="text-light/80 hover:text-light transition-colors disabled:opacity-50"
+              title="Add to Playlist"
+            >
+              <ListPlus className="w-4 h-4 md:w-5 md:h-5" />
+            </button>
+            <button 
               onClick={() => setIsQueueOpen(!isQueueOpen)} 
               className={`queue-toggle-btn text-light/80 hover:text-light transition-colors ${isQueueOpen ? 'text-secondary drop-shadow-[0_0_8px_currentColor]' : ''}`}
               title="Playing Queue"
@@ -241,6 +251,12 @@ export function PlayerBar() {
           </div>
         </div>
       )}
+
+      <AddToPlaylistModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+        trackPath={currentTrack?.path || ""} 
+      />
     </div>
   );
 }
