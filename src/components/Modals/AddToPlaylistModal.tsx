@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { X, Check } from "lucide-react";
 import { useLibrary } from "../../contexts/LibraryContext";
 import { useTranslation } from "../../i18n";
+import { PlaylistCover } from "../Cards/PlaylistCover";
 
 interface AddToPlaylistModalProps {
   isOpen: boolean;
@@ -12,7 +13,7 @@ interface AddToPlaylistModalProps {
 
 export function AddToPlaylistModal({ isOpen, onClose, trackPath }: AddToPlaylistModalProps) {
   const { t } = useTranslation();
-  const { playlists, addTrackToPlaylist, removeTrackFromPlaylist } = useLibrary();
+  const { playlists, tracks, addTrackToPlaylist, removeTrackFromPlaylist } = useLibrary();
   const [selectedPlaylists, setSelectedPlaylists] = useState<Set<string>>(new Set());
   const [initialPlaylists, setInitialPlaylists] = useState<Set<string>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
@@ -102,10 +103,14 @@ export function AddToPlaylistModal({ isOpen, onClose, trackPath }: AddToPlaylist
                     {isSelected && <Check className="w-4 h-4" />}
                   </div>
                   <div className="flex-1 flex items-center gap-3 min-w-0">
-                    <div 
-                      className="w-10 h-10 rounded-lg bg-cover bg-center shrink-0 border border-white/10"
-                      style={{ backgroundImage: `url('${playlist.cover_path || '/PhonographRecord.png'}')` }}
-                    />
+                    <div className="w-10 h-10 rounded-lg shrink-0 border border-white/10 overflow-hidden relative">
+                      <PlaylistCover
+                        playlist={playlist}
+                        allTracks={tracks}
+                        className="absolute inset-0"
+                        fallbackImage="/PhonographRecord.png"
+                      />
+                    </div>
                     <span className="text-light font-medium truncate">{playlist.name}</span>
                   </div>
                 </div>

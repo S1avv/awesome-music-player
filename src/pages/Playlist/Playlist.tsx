@@ -3,9 +3,9 @@ import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 
 import { useTranslation } from "../../i18n";
-import { useLibrary } from "../../contexts/LibraryContext";
+import { useLibrary, Track } from "../../contexts/LibraryContext";
 import { useAudio } from "../../contexts/AudioContext";
-import { Plus, X, Play, Pause, Grid, List, Clock, ChevronDown, AudioLines } from "lucide-react";
+import { Plus, X, Play, Pause, Grid, List, Clock, ChevronDown, ChevronUp, AudioLines } from "lucide-react";
 import { MediaCard } from "../../components/Cards/MediaCard";
 import { PlaylistCover } from "../../components/Cards/PlaylistCover";
 import { formatTime } from "../../utils/formatTime";
@@ -20,6 +20,25 @@ export function Playlist() {
   const [activeTab, setActiveTab] = useState<"recently_added" | "my_collection" | "most_played">(
     (location.state as any)?.tab || "recently_added"
   );
+  
+  const [sortConfig, setSortConfig] = useState<{key: keyof Track, direction: 'asc'|'desc'} | null>(null);
+
+  useEffect(() => {
+    setSortConfig(null);
+  }, [activeTab]);
+
+  const handleSort = (key: keyof Track) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const SortIcon = ({ columnKey }: { columnKey: keyof Track }) => {
+    if (sortConfig?.key !== columnKey) return null;
+    return sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3 ml-1 inline" /> : <ChevronDown className="w-3 h-3 ml-1 inline" />;
+  };
 
   useEffect(() => {
     if ((location.state as any)?.tab) {
@@ -162,6 +181,16 @@ export function Playlist() {
           playlistTracks = [...tracks].filter(t => t.play_count > 0).sort((a, b) => b.play_count - a.play_count);
         }
 
+        if (sortConfig !== null) {
+          playlistTracks = [...playlistTracks].sort((a, b) => {
+            const aVal = a[sortConfig.key] ?? '';
+            const bVal = b[sortConfig.key] ?? '';
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+          });
+        }
+
         return (
           <>
             {/* Grid for Collections */}
@@ -243,11 +272,11 @@ export function Playlist() {
               {/* Table Header */}
               <div className={`grid ${activeTab === 'most_played' ? 'grid-cols-[2.5rem_1fr_3.75rem_4rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_4rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_4rem_3rem]' : 'grid-cols-[2.5rem_1fr_3.75rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_3rem]'} gap-4 px-6 py-4 border-b border-white/5 text-light/50 text-sm font-semibold uppercase tracking-wider mb-2`}>
                 <div>#</div>
-                <div>{(t as any).playlistDetail?.track || "TITLE"}</div>
-                <div className="hidden md:block">{(t as any).playlistDetail?.artist || "ARTIST"}</div>
-                <div className="hidden lg:block">{(t as any).playlistDetail?.album || "ALBUM"}</div>
-                <div className="flex justify-end"><Clock className="w-4 h-4" /></div>
-                {activeTab === 'most_played' && <div className="text-right">{t.playlistDetail.plays}</div>}
+                <button onClick={() => handleSort('title')} className="text-left flex items-center hover:text-light transition-colors">{(t as any).playlistDetail?.track || "TITLE"}<SortIcon columnKey="title" /></button>
+                <button onClick={() => handleSort('artist')} className="hidden md:flex items-center text-left hover:text-light transition-colors">{(t as any).playlistDetail?.artist || "ARTIST"}<SortIcon columnKey="artist" /></button>
+                <button onClick={() => handleSort('album')} className="hidden lg:flex items-center text-left hover:text-light transition-colors">{(t as any).playlistDetail?.album || "ALBUM"}<SortIcon columnKey="album" /></button>
+                <button onClick={() => handleSort('duration')} className="flex justify-end items-center hover:text-light transition-colors ml-auto"><Clock className="w-4 h-4 mr-1" /><SortIcon columnKey="duration" /></button>
+                {activeTab === 'most_played' && <button onClick={() => handleSort('play_count')} className="text-right flex justify-end items-center hover:text-light transition-colors ml-auto">{t.playlistDetail.plays}<SortIcon columnKey="play_count" /></button>}
                 <div></div>
               </div>
 

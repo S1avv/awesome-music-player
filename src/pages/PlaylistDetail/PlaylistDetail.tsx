@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { useLibrary, Track } from "../../contexts/LibraryContext";
 import { useAudio } from "../../contexts/AudioContext";
 import { useTranslation } from "../../i18n";
-import { Play, Pause, Grid, List, ArrowLeft, Clock, Pencil, X, AudioLines, Search, ChevronUp, ChevronDown, Trash2 } from "lucide-react";
+import { Play, Pause, Grid, List, ArrowLeft, Clock, Pencil, X, AudioLines, Search, ChevronUp, ChevronDown, Trash2, GripVertical } from "lucide-react";
+import { Reorder } from "framer-motion";
 import { CoverSearchModal } from "../../components/Modals/CoverSearchModal";
 import { MediaCard } from "../../components/Cards/MediaCard";
 import { PlaylistCover } from "../../components/Cards/PlaylistCover";
@@ -22,7 +23,7 @@ export function PlaylistDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { playlists, tracks, updatePlaylist, removeTrackFromPlaylist, deletePlaylist } = useLibrary();
+  const { playlists, tracks, updatePlaylist, removeTrackFromPlaylist, deletePlaylist, reorderPlaylistTracks } = useLibrary();
   const { playTrack, currentTrack, isPlaying, togglePlayPause, queue } = useAudio();
   
   const [viewMode, setViewMode] = useState<"grid" | "table">("table");
@@ -49,18 +50,18 @@ export function PlaylistDetail() {
   if (decodedId === "recently_added") collectionName = t.playlist.recentlyAdded;
   if (decodedId === "most_played") collectionName = t.playlist.mostPlayed;
 
-  let playlistTracks = tracks;
-  if (decodedId === "main_library") {
-    playlistTracks = tracks;
-  } else if (decodedId === "recently_added") {
-    playlistTracks = [...tracks].sort((a, b) => b.added_at - a.added_at);
-  } else if (decodedId === "most_played") {
-    playlistTracks = [...tracks].filter(t => t.play_count > 0).sort((a, b) => b.play_count - a.play_count);
-  } else if (playlist) {
-    playlistTracks = tracks.filter(t => playlist.tracks.includes(t.path));
-  } else {
-    playlistTracks = [];
-  }
+  const playlistTracks = useMemo(() => {
+    if (decodedId === "main_library") {
+      return tracks;
+    } else if (decodedId === "recently_added") {
+      return [...tracks].sort((a, b) => b.added_at - a.added_at);
+    } else if (decodedId === "most_played") {
+      return [...tracks].filter(t => t.play_count > 0).sort((a, b) => b.play_count - a.play_count);
+    } else if (playlist) {
+      return playlist.tracks.map(p => tracks.find(t => t.path === p)).filter(Boolean) as Track[];
+    }
+    return [];
+  }, [tracks, decodedId, playlist]);
 
   const isSpecialPlaylist = ["main_library", "recently_added", "most_played"].includes(decodedId);
 
@@ -72,16 +73,36 @@ export function PlaylistDetail() {
     setSortConfig({ key, direction });
   };
 
-  const sortedTracks = [...playlistTracks];
-  if (sortConfig !== null) {
-    sortedTracks.sort((a, b) => {
-      const aVal = a[sortConfig.key] ?? '';
-      const bVal = b[sortConfig.key] ?? '';
-      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }
+  const sortedTracks = useMemo(() => {
+    const sorted = [...playlistTracks];
+    if (sortConfig !== null) {
+      sorted.sort((a, b) => {
+        const aVal = a[sortConfig.key] ?? '';
+        const bVal = b[sortConfig.key] ?? '';
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return sorted;
+  }, [playlistTracks, sortConfig]);
+
+  const [localTracks, setLocalTracks] = useState<Track[]>([]);
+  const [isEditingList, setIsEditingList] = useState(false);
+
+  useEffect(() => {
+    setLocalTracks(sortedTracks);
+  }, [sortedTracks]);
+
+  const handleReorder = async (newOrder: Track[]) => {
+    setLocalTracks(newOrder);
+    if (!playlist || isSpecialPlaylist) return;
+    try {
+      await reorderPlaylistTracks(playlist.id, newOrder.map(t => t.path));
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const SortIcon = ({ columnKey }: { columnKey: keyof Track }) => {
     if (sortConfig?.key !== columnKey) return null;
@@ -223,16 +244,25 @@ export function PlaylistDetail() {
               ) : (
                 <Play className="w-5 h-5 fill-current" />
               )}
-              {isPlaylistPlaying ? t.playlistDetail.pause : t.playlistDetail.playAll}
+              {isPlaylistPlaying ? (t as any).playlistDetail?.pause || "Pause" : (t as any).playlistDetail?.playAll || "Play All"}
             </button>
           );
         })()}
 
-        <div className="flex items-center gap-2 bg-dark-alt p-1 rounded-full border border-white/5">
-          <button 
-            onClick={() => setViewMode("table")}
-            className={`p-3 rounded-full transition-colors ${viewMode === "table" ? "bg-white/10 text-secondary" : "text-light/50 hover:text-light"}`}
-          >
+        <div className="flex items-center gap-2">
+          {!isSpecialPlaylist && viewMode === "table" && (
+            <button
+              onClick={() => setIsEditingList(!isEditingList)}
+              className={`px-4 py-2 rounded-full font-bold transition-colors ${isEditingList ? 'bg-secondary text-dark' : 'bg-white/10 text-light hover:bg-white/20'}`}
+            >
+              {isEditingList ? ((t as any).common?.done || "Done") : ((t as any).playlistDetail?.editList || "Edit List")}
+            </button>
+          )}
+          <div className="flex items-center gap-2 bg-dark-alt p-1 rounded-full border border-white/5 ml-4">
+            <button 
+              onClick={() => { setViewMode("table"); setIsEditingList(false); }}
+              className={`p-3 rounded-full transition-colors ${viewMode === "table" ? "bg-white/10 text-secondary" : "text-light/50 hover:text-light"}`}
+            >
             <List className="w-5 h-5" />
           </button>
           <button 
@@ -241,6 +271,7 @@ export function PlaylistDetail() {
           >
             <Grid className="w-5 h-5" />
           </button>
+          </div>
         </div>
       </div>
 
@@ -277,73 +308,131 @@ export function PlaylistDetail() {
             {/* Table Header */}
             <div className={`grid ${decodedId === 'most_played' ? 'grid-cols-[2.5rem_1fr_3.75rem_4rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_4rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_4rem_3rem]' : 'grid-cols-[2.5rem_1fr_3.75rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_3rem]'} gap-4 px-6 py-4 border-b border-white/5 text-light/50 text-sm font-semibold uppercase tracking-wider mb-2`}>
               <div>#</div>
-              <button onClick={() => handleSort('title')} className="text-left flex items-center hover:text-light transition-colors">{(t as any).playlistDetail?.track || "TITLE"}<SortIcon columnKey="title" /></button>
-              <button onClick={() => handleSort('artist')} className="hidden md:flex items-center text-left hover:text-light transition-colors">{(t as any).playlistDetail?.artist || "ARTIST"}<SortIcon columnKey="artist" /></button>
-              <button onClick={() => handleSort('album')} className="hidden lg:flex items-center text-left hover:text-light transition-colors">{(t as any).playlistDetail?.album || "ALBUM"}<SortIcon columnKey="album" /></button>
-              <button onClick={() => handleSort('duration')} className="flex justify-end items-center hover:text-light transition-colors ml-auto"><Clock className="w-4 h-4 mr-1" /><SortIcon columnKey="duration" /></button>
-              {decodedId === 'most_played' && <button onClick={() => handleSort('play_count')} className="text-right flex justify-end items-center hover:text-light transition-colors ml-auto">{t.playlistDetail.plays}<SortIcon columnKey="play_count" /></button>}
+               <button onClick={() => isSpecialPlaylist && handleSort('title')} className={`text-left flex items-center transition-colors ${isSpecialPlaylist ? 'hover:text-light' : 'cursor-default'}`}>{(t as any).playlistDetail?.track || "TITLE"}<SortIcon columnKey="title" /></button>
+              <button onClick={() => isSpecialPlaylist && handleSort('artist')} className={`hidden md:flex items-center text-left transition-colors ${isSpecialPlaylist ? 'hover:text-light' : 'cursor-default'}`}>{(t as any).playlistDetail?.artist || "ARTIST"}<SortIcon columnKey="artist" /></button>
+              <button onClick={() => isSpecialPlaylist && handleSort('album')} className={`hidden lg:flex items-center text-left transition-colors ${isSpecialPlaylist ? 'hover:text-light' : 'cursor-default'}`}>{(t as any).playlistDetail?.album || "ALBUM"}<SortIcon columnKey="album" /></button>
+              <button onClick={() => isSpecialPlaylist && handleSort('duration')} className={`flex justify-end items-center transition-colors ml-auto ${isSpecialPlaylist ? 'hover:text-light' : 'cursor-default'}`}><Clock className="w-4 h-4 mr-1" /><SortIcon columnKey="duration" /></button>
+              {decodedId === 'most_played' && <button onClick={() => handleSort('play_count')} className={`text-right flex justify-end items-center hover:text-light transition-colors ml-auto ${isSpecialPlaylist ? 'hover:text-light' : 'cursor-default'}`}>{t.playlistDetail.plays}<SortIcon columnKey="play_count" /></button>}
               <div></div>
             </div>
 
             {/* Table Rows */}
-            {sortedTracks.map((track, index) => {
-              const isCurrent = currentTrack?.id === track.id;
-              return (
-              <div 
-                key={track.id}
-                onClick={() => {
-                  if (isCurrent) togglePlayPause();
-                  else playTrack(track, sortedTracks);
-                }}
-                className={`grid ${decodedId === 'most_played' ? 'grid-cols-[2.5rem_1fr_3.75rem_4rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_4rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_4rem_3rem]' : 'grid-cols-[2.5rem_1fr_3.75rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_3rem]'} gap-4 px-6 py-4 items-center rounded-xl transition-colors group cursor-pointer ${isCurrent ? 'bg-white/10' : 'hover:bg-white/5'}`}
-              >
-                <div className={`font-medium group-hover:hidden ${isCurrent ? 'text-secondary' : 'text-light/50'}`}>
-                  {isCurrent && isPlaying ? <AudioLines className="w-4 h-4 text-secondary animate-pulse" /> : index + 1}
-                </div>
-                <div className="hidden group-hover:flex items-center text-secondary">
-                  {isCurrent && isPlaying ? (
-                    <Pause className="w-4 h-4 fill-current" />
-                  ) : (
-                    <Play className="w-4 h-4 fill-current" />
-                  )}
-                </div>
-                
-                <div className="font-bold text-light truncate flex items-center gap-2">
-                  <span>{track.title}</span>
-                </div>
-                <div className="hidden md:block text-light/70 truncate">
-                  {track.artist || t.home.unknownArtist}
-                </div>
-                <div className="hidden lg:block text-light/50 truncate">
-                  {track.album || t.playlistDetail.unknownAlbum}
-                </div>
-                <div className="text-light/50 text-right text-sm">
-                  {track.duration ? formatTime(track.duration) : '--:--'}
-                </div>
-                {decodedId === 'most_played' && (
-                  <div className="text-light/50 text-right font-medium">
-                    {track.play_count || 0}
+            {isSpecialPlaylist ? (
+              sortedTracks.map((track, index) => {
+                const isCurrent = currentTrack?.id === track.id;
+                return (
+                <div 
+                  key={track.id}
+                  onClick={() => {
+                    if (isCurrent) togglePlayPause();
+                    else playTrack(track, sortedTracks);
+                  }}
+                  className={`grid ${decodedId === 'most_played' ? 'grid-cols-[2.5rem_1fr_3.75rem_4rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_4rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_4rem_3rem]' : 'grid-cols-[2.5rem_1fr_3.75rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_3rem]'} gap-4 px-6 py-4 items-center rounded-xl transition-colors group cursor-pointer ${isCurrent ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                >
+                  <div className={`font-medium group-hover:hidden ${isCurrent ? 'text-secondary' : 'text-light/50'}`}>
+                    {isCurrent && isPlaying ? <AudioLines className="w-4 h-4 text-secondary animate-pulse" /> : index + 1}
                   </div>
-                )}
-                <div className="flex items-center justify-end gap-1">
-                  {!isSpecialPlaylist && playlist && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeTrackFromPlaylist(playlist.id, track.path);
-                      }}
-                      className="p-1.5 text-light/50 hover:text-red-500 hover:bg-white/10 rounded-full transition-all opacity-0 group-hover:opacity-100"
-                      title="Remove from Playlist"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                  <div className="hidden group-hover:flex items-center text-secondary">
+                    {isCurrent && isPlaying ? (
+                      <Pause className="w-4 h-4 fill-current" />
+                    ) : (
+                      <Play className="w-4 h-4 fill-current" />
+                    )}
+                  </div>
+                  
+                  <div className="font-bold text-light truncate flex items-center gap-2">
+                    <span>{track.title}</span>
+                  </div>
+                  <div className="hidden md:block text-light/70 truncate">
+                    {track.artist || t.home.unknownArtist}
+                  </div>
+                  <div className="hidden lg:block text-light/50 truncate">
+                    {track.album || t.playlistDetail.unknownAlbum}
+                  </div>
+                  <div className="text-light/50 text-right text-sm">
+                    {track.duration ? formatTime(track.duration) : '--:--'}
+                  </div>
+                  {decodedId === 'most_played' && (
+                    <div className="text-light/50 text-right font-medium">
+                      {track.play_count || 0}
+                    </div>
                   )}
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <TrackMenu track={track} playlistTracks={sortedTracks} />
+                  <div className="flex items-center justify-end gap-1">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <TrackMenu track={track} playlistTracks={sortedTracks} />
+                    </div>
                   </div>
                 </div>
-              </div>
-            )})}
+              )})
+            ) : (
+              <Reorder.Group axis="y" values={localTracks} onReorder={handleReorder} className="flex flex-col">
+                {localTracks.map((track, index) => {
+                  const isCurrent = currentTrack?.id === track.id;
+                  return (
+                  <Reorder.Item 
+                    key={track.id}
+                    value={track}
+                    dragListener={isEditingList}
+                    onClick={() => {
+                      if (!isEditingList) {
+                        if (isCurrent) togglePlayPause();
+                        else playTrack(track, localTracks);
+                      }
+                    }}
+                    className={`grid grid-cols-[2.5rem_1fr_3.75rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_3rem] gap-4 px-6 py-4 items-center rounded-xl transition-colors group ${isEditingList ? 'cursor-default' : 'cursor-pointer'} ${isCurrent ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                  >
+                    {!isEditingList && (
+                      <div className={`font-medium group-hover:hidden ${isCurrent ? 'text-secondary' : 'text-light/50'}`}>
+                        {isCurrent && isPlaying ? <AudioLines className="w-4 h-4 text-secondary animate-pulse" /> : index + 1}
+                      </div>
+                    )}
+                    {isEditingList ? (
+                      <div className="flex items-center justify-center text-light/30 hover:text-light/50 cursor-grab active:cursor-grabbing">
+                        <GripVertical className="w-5 h-5" />
+                      </div>
+                    ) : (
+                      <div className="hidden group-hover:flex items-center text-secondary">
+                        {isCurrent && isPlaying ? (
+                          <Pause className="w-4 h-4 fill-current" />
+                        ) : (
+                          <Play className="w-4 h-4 fill-current" />
+                        )}
+                      </div>
+                    )}
+                    
+                    <div className="font-bold text-light truncate flex items-center gap-2">
+                      <span>{track.title}</span>
+                    </div>
+                    <div className="hidden md:block text-light/70 truncate">
+                      {track.artist || t.home.unknownArtist}
+                    </div>
+                    <div className="hidden lg:block text-light/50 truncate">
+                      {track.album || t.playlistDetail.unknownAlbum}
+                    </div>
+                    <div className="text-light/50 text-right text-sm">
+                      {track.duration ? formatTime(track.duration) : '--:--'}
+                    </div>
+                    <div className="flex items-center justify-end gap-1">
+                      {playlist && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeTrackFromPlaylist(playlist.id, track.path);
+                          }}
+                          className="p-1.5 text-light/50 hover:text-red-500 hover:bg-white/10 rounded-full transition-all opacity-0 group-hover:opacity-100"
+                          title="Remove from Playlist"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <TrackMenu track={track} playlistTracks={localTracks} />
+                      </div>
+                    </div>
+                  </Reorder.Item>
+                )})}
+              </Reorder.Group>
+            )}
           </div>
         )}
       </div>

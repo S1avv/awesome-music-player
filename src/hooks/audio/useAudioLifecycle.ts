@@ -16,6 +16,7 @@ interface UseAudioLifecycleProps {
   volume: number;
   setDuration: (dur: number) => void;
   setCurrentTime: (time: number) => void;
+  setProgress: (p: number) => void;
   isInitialized: boolean;
   tracks: Track[];
   handleNextTrackRef: MutableRefObject<(() => void) | null>;
@@ -33,6 +34,7 @@ export function useAudioLifecycle({
   volume,
   setDuration,
   setCurrentTime,
+  setProgress,
   isInitialized,
   tracks,
   handleNextTrackRef,
@@ -79,8 +81,16 @@ export function useAudioLifecycle({
               src = convertFileSrc(track.path);
             }
             audio.src = src;
-            audio.currentTime = time || 0;
-            setCurrentTime(time || 0);
+            
+            const onInitialLoad = () => {
+              audio.currentTime = time || 0;
+              setCurrentTime(time || 0);
+              if (audio.duration) {
+                setProgress((time || 0) / audio.duration);
+              }
+              audio.removeEventListener('loadedmetadata', onInitialLoad);
+            };
+            audio.addEventListener('loadedmetadata', onInitialLoad);
             
             // Deliberately do not call audio.play() even if playing was true,
             // so the application always opens in a paused state.

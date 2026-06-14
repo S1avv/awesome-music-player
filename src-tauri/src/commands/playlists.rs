@@ -199,3 +199,21 @@ pub fn remove_track_from_playlist(
         Err("Playlist not found".into())
     }
 }
+
+#[tauri::command]
+pub fn reorder_playlist_tracks(
+    playlist_id: String,
+    new_tracks: Vec<String>,
+    app: AppHandle,
+    state: tauri::State<'_, Arc<Mutex<PlaylistManager>>>
+) -> Result<(), String> {
+    let mut manager = state.lock().map_err(|_| "Failed to acquire lock")?;
+    
+    if let Some(playlist) = manager.playlists.get_mut(&playlist_id) {
+        playlist.tracks = new_tracks;
+        manager.save(&app)?;
+        Ok(())
+    } else {
+        Err("Playlist not found".into())
+    }
+}

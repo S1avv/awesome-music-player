@@ -44,6 +44,7 @@ interface LibraryContextType {
   deletePlaylist: (id: string) => Promise<void>;
   addTrackToPlaylist: (playlistId: string, trackPath: string) => Promise<void>;
   removeTrackFromPlaylist: (playlistId: string, trackPath: string) => Promise<void>;
+  reorderPlaylistTracks: (playlistId: string, newTracks: string[]) => Promise<void>;
 }
 
 const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
@@ -225,6 +226,16 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const reorderPlaylistTracks = async (playlistId: string, newTracks: string[]) => {
+    try {
+      await invoke("reorder_playlist_tracks", { playlistId, newTracks });
+      await fetchPlaylists();
+    } catch (e: any) {
+      console.error(e);
+      throw e;
+    }
+  };
+
   return (
     <LibraryContext.Provider value={{ 
       tracks, 
@@ -240,7 +251,8 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       updatePlaylist,
       deletePlaylist,
       addTrackToPlaylist,
-      removeTrackFromPlaylist
+      removeTrackFromPlaylist,
+      reorderPlaylistTracks
     }}>
       {children}
     </LibraryContext.Provider>
