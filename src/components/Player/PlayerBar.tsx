@@ -1,11 +1,18 @@
-import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Volume2, VolumeX, MoreHorizontal } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Volume2, VolumeX, MoreHorizontal, ListMusic, ListPlus } from "lucide-react";
 import { useAudio } from "../../contexts/AudioContext";
 import { useState } from "react";
 import { TrackCover } from "../Cards/TrackCover";
+import { AddToPlaylistModal } from "../Modals/AddToPlaylistModal";
 import { useTranslation } from "../../i18n";
 import { formatTime } from "../../utils/formatTime";
+import { motion, AnimatePresence } from "framer-motion";
 
-export function PlayerBar() {
+interface PlayerBarProps {
+  isCollapsed?: boolean;
+  onExpand?: () => void;
+}
+
+export function PlayerBar({ isCollapsed = false, onExpand }: PlayerBarProps) {
   const {
     currentTrack,
     isPlaying,
@@ -23,171 +30,228 @@ export function PlayerBar() {
     toggleRepeat,
     toggleShuffle,
     setIsNowPlayingOpen,
-    queue
+    queue,
+    isQueueOpen,
+    setIsQueueOpen
   } = useAudio();
 
   const { t } = useTranslation();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
-  if (isCollapsed) {
-    return (
-      <div
-        onClick={() => setIsCollapsed(false)}
-        className="w-full h-2 bg-secondary cursor-pointer hover:h-3 hover:brightness-110 transition-all shrink-0 z-50 shadow-[0_0_15px_currentColor]"
-        title="Expand player"
-      />
-    );
-  }
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   return (
-    <div className="w-full bg-white/5 backdrop-blur-3xl flex flex-col items-center relative shrink-0 z-50 group/player transition-all duration-300">
-
-      {/* Collapse Toggle Layer */}
-      <div
-        onClick={() => setIsCollapsed(true)}
-        className="w-full h-1.5 bg-white/10 cursor-pointer hover:bg-secondary/80 transition-colors"
-        title="Collapse player"
-      />
-
-      <div className="w-full max-w-[1600px] flex flex-col pb-4 pt-2 px-4 md:px-12">
-        {/* Main Player Row */}
-        <div className="w-full h-16 md:h-24 flex items-center justify-between gap-4">
-
-          {/* Left: Track Info */}
-          <div className="flex items-center gap-3 md:gap-4 flex-1 md:w-1/3 min-w-0">
-            <button onClick={() => currentTrack && setIsNowPlayingOpen(true)} className="w-14 h-14 md:w-16 md:h-16 rounded-2xl overflow-hidden shrink-0 hover:scale-105 transition-transform block text-left bg-transparent border-none p-0 cursor-pointer">
-              <TrackCover path={currentTrack?.path} />
-            </button>
-            <div className="flex flex-col justify-center overflow-hidden min-w-0">
-              <button onClick={() => currentTrack && setIsNowPlayingOpen(true)} className="text-light font-bold text-sm md:text-base truncate hover:text-secondary transition-colors inline-block text-left bg-transparent border-none p-0 cursor-pointer">
-                {currentTrack?.title || "No track playing"}
-              </button>
-              <span className="text-light/50 text-xs md:text-sm font-medium truncate">
-                {currentTrack?.artist || "Unknown Artist"}
-              </span>
-            </div>
-          </div>
-
-          {/* Center: Controls */}
-          <div className="flex items-center justify-end md:justify-center gap-4 md:gap-8 shrink-0 md:w-1/3">
-            <button
-              onClick={toggleShuffle}
-              className={`group relative hidden md:block transition-colors ${isShuffled ? 'text-secondary drop-shadow-[0_0_8px_currentColor]' : 'text-light/50 hover:text-light'}`}
+    <>
+      <motion.div
+        initial={false}
+        animate={isCollapsed ? "collapsed" : "expanded"}
+        variants={{
+          expanded: {
+            width: "calc(100% - 48px)",
+            maxWidth: "1200px",
+            height: "112px",
+            borderRadius: "32px",
+            bottom: "24px",
+            left: "50%",
+            x: "-50%",
+            opacity: 1,
+            pointerEvents: "auto",
+          },
+          collapsed: {
+            width: "112px",
+            height: "112px",
+            borderRadius: "32px",
+            bottom: "24px",
+            left: "100%",
+            x: "calc(-100% - 24px)",
+            opacity: 0.9,
+            pointerEvents: "auto",
+          }
+        }}
+        transition={{ type: "spring", stiffness: 400, damping: 35 }}
+        className={`fixed shadow-2xl border z-[100] flex flex-col justify-center overflow-hidden transition-colors duration-300 ${isCollapsed ? 'bg-dark border-transparent backdrop-blur-none' : 'bg-dark-alt/80 border-white/10 backdrop-blur-3xl'}`}
+      >
+        <AnimatePresence>
+          {!isCollapsed ? (
+            <motion.div
+              key="expanded-content"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute left-1/2 -translate-x-1/2 w-[calc(100vw-48px)] max-w-[1200px] h-full flex flex-col items-center group/player"
             >
-              <Shuffle className="w-4 h-4 md:w-5 md:h-5" />
-              <div className="absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 px-4 py-2 bg-dark-alt border border-white/5 text-light text-sm font-medium rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-0 delay-0 group-hover:duration-300 group-hover:delay-[100ms] whitespace-nowrap z-50 pointer-events-none">
-                Shuffle
+              <div className="w-full h-full flex flex-col justify-center px-4 md:px-8">
+                {/* Main Player Row */}
+                <div className="w-full h-14 md:h-16 flex items-center justify-between gap-4">
+
+                  {/* Left: Track Info */}
+                  <div className="flex items-center gap-3 md:gap-4 flex-1 md:w-1/3 min-w-0">
+                    <button onClick={() => currentTrack && setIsNowPlayingOpen(true)} className="w-12 h-12 md:w-14 md:h-14 rounded-2xl overflow-hidden shrink-0 hover:scale-105 transition-transform block text-left bg-transparent border-none p-0 cursor-pointer">
+                      <TrackCover path={currentTrack?.path} />
+                    </button>
+                    <div className="flex flex-col justify-center overflow-hidden min-w-0">
+                      <button onClick={() => currentTrack && setIsNowPlayingOpen(true)} className="text-light font-bold text-sm md:text-base truncate hover:text-secondary transition-colors inline-block text-left bg-transparent border-none p-0 cursor-pointer">
+                        {currentTrack?.title || "No track playing"}
+                      </button>
+                      <span className="text-light/50 text-xs md:text-sm font-medium truncate">
+                        {currentTrack?.artist || "Unknown Artist"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Center: Controls */}
+                  <div className="flex items-center justify-end md:justify-center gap-4 md:gap-8 shrink-0 md:w-1/3">
+                    <button
+                      onClick={toggleShuffle}
+                      className={`group relative hidden md:block transition-colors ${isShuffled ? 'text-secondary drop-shadow-[0_0_8px_currentColor]' : 'text-light/50 hover:text-light'}`}
+                    >
+                      <Shuffle className="w-4 h-4 md:w-5 md:h-5" />
+                      <div className="absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 px-4 py-2 bg-dark border border-white/5 text-light text-sm font-medium rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 pointer-events-none">
+                        Shuffle
+                      </div>
+                    </button>
+
+                    <button 
+                      onClick={prevTrack} 
+                      disabled={queue.length <= 1}
+                      className={`group relative transition-colors ${queue.length <= 1 ? 'text-light/20 cursor-not-allowed' : 'text-light/80 hover:text-light'}`}
+                    >
+                      <SkipBack className="w-5 h-5 md:w-6 md:h-6 fill-current" />
+                      <div className="absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 px-4 py-2 bg-dark border border-white/5 text-light text-sm font-medium rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 pointer-events-none">
+                        {t.tray.prevTrack}
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={togglePlayPause}
+                      className="group relative w-10 h-10 md:w-14 md:h-14 rounded-full bg-secondary flex items-center justify-center text-dark hover:scale-105 transition-transform shrink-0"
+                    >
+                      {isPlaying ? (
+                        <Pause className="w-4 h-4 md:w-6 md:h-6 fill-current" />
+                      ) : (
+                        <Play className="w-4 h-4 md:w-6 md:h-6 fill-current ml-1" />
+                      )}
+                      <div className="absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 px-4 py-2 bg-dark border border-white/5 text-light text-sm font-medium rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 pointer-events-none">
+                        {t.tray.playPause}
+                      </div>
+                    </button>
+
+                    <button 
+                      onClick={nextTrack} 
+                      disabled={queue.length <= 1}
+                      className={`group relative transition-colors ${queue.length <= 1 ? 'text-light/20 cursor-not-allowed' : 'text-light/80 hover:text-light'}`}
+                    >
+                      <SkipForward className="w-5 h-5 md:w-6 md:h-6 fill-current" />
+                      <div className="absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 px-4 py-2 bg-dark border border-white/5 text-light text-sm font-medium rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 pointer-events-none">
+                        {t.tray.nextTrack}
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={toggleRepeat}
+                      className={`group relative hidden md:block transition-colors ${repeatMode !== 'off' ? 'text-secondary drop-shadow-[0_0_8px_currentColor]' : 'text-light/50 hover:text-light'}`}
+                    >
+                      <Repeat className="w-4 h-4 md:w-5 md:h-5" />
+                      {repeatMode === 'one' && (
+                        <span className="absolute -top-1 -right-1 text-[8px] font-bold bg-dark text-secondary rounded-full w-3 h-3 flex items-center justify-center">1</span>
+                      )}
+                      <div className="absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 px-4 py-2 bg-dark border border-white/5 text-light text-sm font-medium rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 pointer-events-none">
+                        {repeatMode === 'one' ? 'Repeat 1' : 'Repeat'}
+                      </div>
+                    </button>
+
+                    {/* Mobile Options Toggle */}
+                    <button
+                      onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                      className="md:hidden text-light/80 hover:text-light transition-colors ml-2"
+                    >
+                      <MoreHorizontal className="w-6 h-6" />
+                    </button>
+                  </div>
+
+                  {/* Right: Volume & Queue (Desktop) */}
+                  <div className="hidden md:flex items-center justify-end gap-4 w-1/3">
+                    <button 
+                      onClick={() => currentTrack && setIsAddModalOpen(true)} 
+                      disabled={!currentTrack}
+                      className="text-light/80 hover:text-light transition-colors disabled:opacity-50"
+                      title="Add to Playlist"
+                    >
+                      <ListPlus className="w-4 h-4 md:w-5 md:h-5" />
+                    </button>
+                    <button 
+                      onClick={() => setIsQueueOpen(!isQueueOpen)} 
+                      className={`queue-toggle-btn text-light/80 hover:text-light transition-colors ${isQueueOpen ? 'text-secondary drop-shadow-[0_0_8px_currentColor]' : ''}`}
+                      title="Playing Queue"
+                    >
+                      <ListMusic className="w-4 h-4 md:w-5 md:h-5" />
+                    </button>
+                    <button onClick={() => setVolume(volume === 0 ? 1 : 0)} className="text-light/80 hover:text-light transition-colors">
+                      {volume === 0 ? <VolumeX className="w-4 h-4 md:w-5 md:h-5" /> : <Volume2 className="w-4 h-4 md:w-5 md:h-5" />}
+                    </button>
+                    <div className="w-24 md:w-32 h-1 bg-white/10 rounded-full relative group">
+                      <div
+                        className="absolute top-0 left-0 h-full bg-secondary rounded-full pointer-events-none"
+                        style={{ width: `${volume * 100}%` }}
+                      />
+                      <input
+                        type="range"
+                        min="0" max="1" step="0.01"
+                        value={volume}
+                        onChange={(e) => setVolume(parseFloat(e.target.value))}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Progress Bar */}
+                <div className="w-full flex items-center relative group px-2 gap-3 md:gap-4 mt-1">
+                  <span className="text-[10px] md:text-xs font-bold text-light/40 w-8 md:w-10 text-right tabular-nums">{formatTime(currentTime)}</span>
+                  <div className="flex-1 h-1 md:h-1.5 bg-white/10 rounded-full relative hover:h-2 transition-all">
+                    <div
+                      className="absolute top-0 left-0 h-full bg-secondary rounded-full pointer-events-none"
+                      style={{ width: `${progress * 100}%` }}
+                    >
+                      {/* Knob */}
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-light rounded-full border-2 border-secondary opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <input
+                      type="range"
+                      min="0" max="1" step="0.0001"
+                      value={progress || 0}
+                      onChange={(e) => seek(parseFloat(e.target.value))}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                  </div>
+                  <span className="text-[10px] md:text-xs font-bold text-light/40 w-8 md:w-10 tabular-nums">{formatTime(duration)}</span>
+                </div>
+
               </div>
-            </button>
-
-            <button 
-              onClick={prevTrack} 
-              disabled={queue.length <= 1}
-              className={`group relative transition-colors ${queue.length <= 1 ? 'text-light/20 cursor-not-allowed' : 'text-light/80 hover:text-light'}`}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="collapsed-content"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 w-full h-full flex items-center justify-center cursor-pointer group"
+              onClick={onExpand}
             >
-              <SkipBack className="w-5 h-5 md:w-6 md:h-6 fill-current" />
-              <div className="absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 px-4 py-2 bg-dark-alt border border-white/5 text-light text-sm font-medium rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-0 delay-0 group-hover:duration-300 group-hover:delay-[100ms] whitespace-nowrap z-50 pointer-events-none">
-                {t.tray.prevTrack}
+              <div className="w-full h-full p-2 relative">
+                <TrackCover path={currentTrack?.path} className="w-full h-full rounded-[24px] object-cover" />
+                <div className="absolute inset-0 m-2 rounded-[24px] border border-white/20 pointer-events-none" />
               </div>
-            </button>
-
-            <button
-              onClick={togglePlayPause}
-              className="group relative w-10 h-10 md:w-14 md:h-14 rounded-full bg-secondary flex items-center justify-center text-dark hover:scale-105 transition-transform shrink-0"
-            >
-              {isPlaying ? (
-                <Pause className="w-4 h-4 md:w-6 md:h-6 fill-current" />
-              ) : (
-                <Play className="w-4 h-4 md:w-6 md:h-6 fill-current ml-1" />
-              )}
-              <div className="absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 px-4 py-2 bg-dark-alt border border-white/5 text-light text-sm font-medium rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-0 delay-0 group-hover:duration-300 group-hover:delay-[100ms] whitespace-nowrap z-50 pointer-events-none">
-                {t.tray.playPause}
-              </div>
-            </button>
-
-            <button 
-              onClick={nextTrack} 
-              disabled={queue.length <= 1}
-              className={`group relative transition-colors ${queue.length <= 1 ? 'text-light/20 cursor-not-allowed' : 'text-light/80 hover:text-light'}`}
-            >
-              <SkipForward className="w-5 h-5 md:w-6 md:h-6 fill-current" />
-              <div className="absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 px-4 py-2 bg-dark-alt border border-white/5 text-light text-sm font-medium rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-0 delay-0 group-hover:duration-300 group-hover:delay-[100ms] whitespace-nowrap z-50 pointer-events-none">
-                {t.tray.nextTrack}
-              </div>
-            </button>
-
-            <button
-              onClick={toggleRepeat}
-              className={`group relative hidden md:block transition-colors ${repeatMode !== 'off' ? 'text-secondary drop-shadow-[0_0_8px_currentColor]' : 'text-light/50 hover:text-light'}`}
-            >
-              <Repeat className="w-4 h-4 md:w-5 md:h-5" />
-              {repeatMode === 'one' && (
-                <span className="absolute -top-1 -right-1 text-[8px] font-bold bg-dark text-secondary rounded-full w-3 h-3 flex items-center justify-center">1</span>
-              )}
-              <div className="absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2 px-4 py-2 bg-dark-alt border border-white/5 text-light text-sm font-medium rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-0 delay-0 group-hover:duration-300 group-hover:delay-[100ms] whitespace-nowrap z-50 pointer-events-none">
-                {repeatMode === 'one' ? 'Repeat 1' : 'Repeat'}
-              </div>
-            </button>
-
-            {/* Mobile Options Toggle */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden text-light/80 hover:text-light transition-colors ml-2"
-            >
-              <MoreHorizontal className="w-6 h-6" />
-            </button>
-          </div>
-
-          {/* Right: Volume (Desktop) */}
-          <div className="hidden md:flex items-center justify-end gap-4 w-1/3">
-            <button onClick={() => setVolume(volume === 0 ? 1 : 0)} className="text-light/80 hover:text-light transition-colors">
-              {volume === 0 ? <VolumeX className="w-4 h-4 md:w-5 md:h-5" /> : <Volume2 className="w-4 h-4 md:w-5 md:h-5" />}
-            </button>
-            <div className="w-24 md:w-32 h-1 bg-white/10 rounded-full relative group">
-              <div
-                className="absolute top-0 left-0 h-full bg-secondary rounded-full pointer-events-none"
-                style={{ width: `${volume * 100}%` }}
-              />
-              <input
-                type="range"
-                min="0" max="1" step="0.01"
-                value={volume}
-                onChange={(e) => setVolume(parseFloat(e.target.value))}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Progress Bar */}
-        <div className="w-full flex items-center mt-[-8px] relative group px-4 md:px-12 gap-3 md:gap-4">
-          <span className="text-[10px] md:text-xs font-bold text-light/40 w-8 md:w-10 text-right tabular-nums">{formatTime(currentTime)}</span>
-          <div className="flex-1 h-1 md:h-1.5 bg-white/10 rounded-full relative hover:h-2 transition-all">
-            <div
-              className="absolute top-0 left-0 h-full bg-secondary rounded-full pointer-events-none"
-              style={{ width: `${progress * 100}%` }}
-            >
-              {/* Knob */}
-              <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-4 h-4 bg-light rounded-full border-2 border-secondary opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-            <input
-              type="range"
-              min="0" max="1" step="0.0001"
-              value={progress || 0}
-              onChange={(e) => seek(parseFloat(e.target.value))}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-          </div>
-          <span className="text-[10px] md:text-xs font-bold text-light/40 w-8 md:w-10 tabular-nums">{formatTime(duration)}</span>
-        </div>
-
-      </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       {/* Mobile Options Menu */}
       {isMobileMenuOpen && (
-        <div className="absolute bottom-full right-4 mb-4 bg-dark-alt/95 backdrop-blur-xl border border-white/10 rounded-2xl p-5 flex flex-col gap-5 animate-fade-in-up md:hidden w-64 z-50">
+        <div className="fixed bottom-32 right-4 mb-4 bg-dark-alt/95 backdrop-blur-xl border border-white/10 rounded-2xl p-5 flex flex-col gap-5 animate-fade-in-up md:hidden w-64 z-[110]">
           <div className="flex items-center justify-between w-full">
             <button onClick={() => setVolume(volume === 0 ? 1 : 0)} className="text-light/80 hover:text-light transition-colors">
               {volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
@@ -216,6 +280,13 @@ export function PlayerBar() {
               <span className="text-[10px] font-bold">Shuffle</span>
             </button>
             <button
+              onClick={() => setIsQueueOpen(!isQueueOpen)}
+              className={`queue-toggle-btn transition-colors flex flex-col items-center gap-1 ${isQueueOpen ? 'text-secondary drop-shadow-[0_0_8px_currentColor]' : 'text-light/50 hover:text-light'}`}
+            >
+              <ListMusic className="w-5 h-5" />
+              <span className="text-[10px] font-bold">Queue</span>
+            </button>
+            <button
               onClick={toggleRepeat}
               className={`transition-colors flex flex-col items-center gap-1 relative ${repeatMode !== 'off' ? 'text-secondary drop-shadow-[0_0_8px_currentColor]' : 'text-light/50 hover:text-light'}`}
             >
@@ -225,6 +296,12 @@ export function PlayerBar() {
           </div>
         </div>
       )}
-    </div>
+
+      <AddToPlaylistModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+        trackPath={currentTrack?.path || ""} 
+      />
+    </>
   );
 }

@@ -1,25 +1,44 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate, Link, useLocation } from "react-router-dom";
-import { invoke } from "@tauri-apps/api/core";
-import { useSettings } from "../../hooks/useSettings";
+import { useNavigate, useLocation } from "react-router-dom";
+
 import { useTranslation } from "../../i18n";
-import { useLibrary } from "../../contexts/LibraryContext";
+import { useLibrary, Track } from "../../contexts/LibraryContext";
 import { useAudio } from "../../contexts/AudioContext";
-import { Plus, X, Play, Pause, Grid, List, Clock, Edit3, ChevronDown, AudioLines } from "lucide-react";
+import { Plus, X, Play, Pause, Grid, List, Clock, ChevronDown, ChevronUp, AudioLines } from "lucide-react";
 import { MediaCard } from "../../components/Cards/MediaCard";
+import { PlaylistCover } from "../../components/Cards/PlaylistCover";
 import { formatTime } from "../../utils/formatTime";
+import { TrackMenu } from "../../components/ContextMenu/TrackMenu";
 
 export function Playlist() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { libraryPath } = useSettings();
-  const { collections, tracks, scanLibrary } = useLibrary();
+  const { playlists, tracks, createPlaylist } = useLibrary();
   const { playTrack, currentTrack, isPlaying, togglePlayPause } = useAudio();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState<"my_collection" | "recently_added" | "most_played">(
-    (location.state as any)?.tab || "my_collection"
+  const [activeTab, setActiveTab] = useState<"recently_added" | "my_collection" | "most_played">(
+    (location.state as any)?.tab || "recently_added"
   );
+  
+  const [sortConfig, setSortConfig] = useState<{key: keyof Track, direction: 'asc'|'desc'} | null>(null);
+
+  useEffect(() => {
+    setSortConfig(null);
+  }, [activeTab]);
+
+  const handleSort = (key: keyof Track) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const SortIcon = ({ columnKey }: { columnKey: keyof Track }) => {
+    if (sortConfig?.key !== columnKey) return null;
+    return sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3 ml-1 inline" /> : <ChevronDown className="w-3 h-3 ml-1 inline" />;
+  };
 
   useEffect(() => {
     if ((location.state as any)?.tab) {
@@ -46,8 +65,8 @@ export function Playlist() {
   }, []);
 
   const tabOptions = [
-    { id: "my_collection", label: t.playlist?.myCollection || "My collection" },
     { id: "recently_added", label: t.playlist?.recentlyAdded || "Recently Added" },
+    { id: "my_collection", label: t.playlist?.myCollection || "Playlists" },
     { id: "most_played", label: t.playlist?.mostPlayed || "Most Played Tracks" },
   ] as const;
   
@@ -55,28 +74,24 @@ export function Playlist() {
 
   const handleCreatePlaylist = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPlaylistName.trim() || !libraryPath) return;
+    if (!newPlaylistName.trim()) return;
 
     setIsCreating(true);
     try {
-      await invoke("create_folder", { 
-        basePath: libraryPath, 
-        folderName: newPlaylistName.trim() 
-      });
-      await scanLibrary();
+      await createPlaylist(newPlaylistName.trim());
       setIsCreateModalOpen(false);
       setNewPlaylistName("");
     } catch (error) {
-      console.error("Failed to create playlist folder:", error);
+      console.error("Failed to create playlist:", error);
     } finally {
       setIsCreating(false);
     }
   };
 
   return (
-    <div className="w-full flex flex-col gap-8 pb-12 animate-fade-in">
+    <div className="w-full flex flex-col gap-4 pb-12 animate-fade-in">
       {/* Tabs */}
-      <div className="flex items-center gap-4">
+      <div className="sticky top-0 z-30 bg-dark/95 backdrop-blur-xl pt-2 pb-4 -mx-6 px-6 md:mx-0 md:px-0 flex items-center gap-4 border-b border-transparent">
         {/* Mobile Dropdown (shown only on small screens) */}
         <div className="relative md:hidden min-w-[200px]" ref={dropdownRef}>
           <div 
@@ -108,16 +123,6 @@ export function Playlist() {
         {/* Desktop Buttons (shown only on medium screens and larger) */}
         <div className="hidden md:flex items-center gap-4">
           <button 
-            onClick={() => setActiveTab("my_collection")}
-            className={`px-6 py-2 rounded-full font-semibold transition-colors ${
-              activeTab === "my_collection" 
-                ? "bg-secondary text-dark" 
-                : "bg-transparent text-light/70 border border-white/20 hover:border-white/40"
-            }`}
-          >
-            {t.playlist?.myCollection || "My collection"}
-          </button>
-          <button 
             onClick={() => setActiveTab("recently_added")}
             className={`px-6 py-2 rounded-full font-semibold transition-colors ${
               activeTab === "recently_added" 
@@ -126,6 +131,16 @@ export function Playlist() {
             }`}
           >
             {t.playlist?.recentlyAdded || "Recently Added"}
+          </button>
+          <button 
+            onClick={() => setActiveTab("my_collection")}
+            className={`px-6 py-2 rounded-full font-semibold transition-colors ${
+              activeTab === "my_collection" 
+                ? "bg-secondary text-dark" 
+                : "bg-transparent text-light/70 border border-white/20 hover:border-white/40"
+            }`}
+          >
+            {t.playlist?.myCollection || "Playlists"}
           </button>
           <button 
             onClick={() => setActiveTab("most_played")}
@@ -166,6 +181,16 @@ export function Playlist() {
           playlistTracks = [...tracks].filter(t => t.play_count > 0).sort((a, b) => b.play_count - a.play_count);
         }
 
+        if (sortConfig !== null) {
+          playlistTracks = [...playlistTracks].sort((a, b) => {
+            const aVal = a[sortConfig.key] ?? '';
+            const bVal = b[sortConfig.key] ?? '';
+            if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+          });
+        }
+
         return (
           <>
             {/* Grid for Collections */}
@@ -182,16 +207,18 @@ export function Playlist() {
             <h3 className="text-light text-base md:text-lg font-bold text-center">{t.playlist.createPlaylist}</h3>
           </div>
 
-          {collections.map(collection => (
+          {playlists.filter(p => p.id !== 'main_library').map(playlist => (
             <div 
-              key={collection.id} 
-              onClick={() => navigate(`/playlist/${encodeURIComponent(collection.id)}`)}
+              key={playlist.id} 
+              onClick={() => navigate(`/playlist/${encodeURIComponent(playlist.id)}`)}
               className="relative aspect-square rounded-[2rem] overflow-hidden group cursor-pointer transition-all min-w-0"
             >
               {/* Background */}
-              <div 
-                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                style={{ backgroundImage: `url('${collection.image}')` }}
+              <PlaylistCover 
+                playlist={playlist}
+                allTracks={tracks}
+                className="absolute inset-0 transition-transform duration-700 group-hover:scale-110 bg-dark"
+                fallbackImage="/PhonographRecord.png"
               />
               
               {/* Overlay Gradient */}
@@ -200,10 +227,10 @@ export function Playlist() {
               {/* Content */}
               <div className="absolute bottom-0 left-0 w-full p-6 flex flex-col justify-end">
                 <h3 className="text-light text-2xl font-bold truncate mb-1">
-                  {collection.name}
+                  {playlist.name}
                 </h3>
                 <p className="text-light/50 text-sm font-medium">
-                  {collection.trackCount} {t.playlist.tracks}
+                  {playlist.tracks.length} {t.playlist.tracks}
                 </p>
               </div>
             </div>
@@ -226,6 +253,8 @@ export function Playlist() {
                     isCurrentTrack={currentTrack?.id === track.id}
                     isPlaying={isPlaying}
                     playCount={activeTab === 'most_played' ? track.play_count : undefined}
+                    track={track}
+                    playlistTracks={playlistTracks}
                     onPlayPauseClick={(e) => {
                       e.stopPropagation();
                       if (currentTrack?.id === track.id) {
@@ -241,13 +270,14 @@ export function Playlist() {
           ) : (
             <div className="flex flex-col w-full">
               {/* Table Header */}
-              <div className={`grid ${activeTab === 'most_played' ? 'grid-cols-[2.5rem_1fr_3.75rem_4rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_4rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_4rem]' : 'grid-cols-[2.5rem_1fr_3.75rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem]'} gap-4 px-6 py-4 border-b border-white/5 text-light/50 text-sm font-semibold uppercase tracking-wider mb-2`}>
+              <div className={`grid ${activeTab === 'most_played' ? 'grid-cols-[2.5rem_1fr_3.75rem_4rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_4rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_4rem_3rem]' : 'grid-cols-[2.5rem_1fr_3.75rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_3rem]'} gap-4 px-6 py-4 border-b border-white/5 text-light/50 text-sm font-semibold uppercase tracking-wider mb-2 sticky top-[72px] md:top-[64px] z-20 bg-dark/95 backdrop-blur-xl -mx-6 md:mx-0`}>
                 <div>#</div>
-                <div>{(t as any).playlistDetail?.track || "TITLE"}</div>
-                <div className="hidden md:block">{(t as any).playlistDetail?.artist || "ARTIST"}</div>
-                <div className="hidden lg:block">{(t as any).playlistDetail?.album || "ALBUM"}</div>
-                <div className="flex justify-end"><Clock className="w-4 h-4" /></div>
-                {activeTab === 'most_played' && <div className="text-right">{t.playlistDetail.plays}</div>}
+                <button onClick={() => handleSort('title')} className="text-left flex items-center hover:text-light transition-colors">{(t as any).playlistDetail?.track || "TITLE"}<SortIcon columnKey="title" /></button>
+                <button onClick={() => handleSort('artist')} className="hidden md:flex items-center text-left hover:text-light transition-colors">{(t as any).playlistDetail?.artist || "ARTIST"}<SortIcon columnKey="artist" /></button>
+                <button onClick={() => handleSort('album')} className="hidden lg:flex items-center text-left hover:text-light transition-colors">{(t as any).playlistDetail?.album || "ALBUM"}<SortIcon columnKey="album" /></button>
+                <button onClick={() => handleSort('duration')} className="flex justify-end items-center hover:text-light transition-colors ml-auto"><Clock className="w-4 h-4 mr-1" /><SortIcon columnKey="duration" /></button>
+                {activeTab === 'most_played' && <button onClick={() => handleSort('play_count')} className="text-right flex justify-end items-center hover:text-light transition-colors ml-auto">{t.playlistDetail.plays}<SortIcon columnKey="play_count" /></button>}
+                <div></div>
               </div>
 
               {/* Table Rows */}
@@ -260,7 +290,7 @@ export function Playlist() {
                     if (isCurrent) togglePlayPause();
                     else playTrack(track, playlistTracks);
                   }}
-                  className={`grid ${activeTab === 'most_played' ? 'grid-cols-[2.5rem_1fr_3.75rem_4rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_4rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_4rem]' : 'grid-cols-[2.5rem_1fr_3.75rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem]'} gap-4 px-6 py-4 items-center rounded-xl transition-colors group cursor-pointer ${isCurrent ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                  className={`grid ${activeTab === 'most_played' ? 'grid-cols-[2.5rem_1fr_3.75rem_4rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_4rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_4rem_3rem]' : 'grid-cols-[2.5rem_1fr_3.75rem_3rem] md:grid-cols-[2.5rem_1fr_1fr_3.75rem_3rem] lg:grid-cols-[2.5rem_1fr_1fr_1fr_3.75rem_3rem]'} gap-4 px-6 py-4 items-center rounded-xl transition-colors group cursor-pointer ${isCurrent ? 'bg-white/10' : 'hover:bg-white/5'}`}
                 >
                   <div className={`font-medium group-hover:hidden ${isCurrent ? 'text-secondary' : 'text-light/50'}`}>
                     {isCurrent && isPlaying ? <AudioLines className="w-4 h-4 text-secondary animate-pulse" /> : index + 1}
@@ -275,14 +305,6 @@ export function Playlist() {
                   
                   <div className="font-bold text-light truncate flex items-center gap-2">
                     <span>{track.title}</span>
-                    <Link 
-                      to={`/track/${encodeURIComponent(track.path)}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded transition-all text-light/50 hover:text-light"
-                      title="Edit Track"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </Link>
                   </div>
                   <div className="hidden md:block text-light/70 truncate">
                     {track.artist || t.home.unknownArtist}
@@ -298,6 +320,11 @@ export function Playlist() {
                       {track.play_count || 0}
                     </div>
                   )}
+                  <div className="flex items-center justify-end">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <TrackMenu track={track} playlistTracks={playlistTracks} />
+                    </div>
+                  </div>
                 </div>
                 );
               })}
@@ -307,11 +334,11 @@ export function Playlist() {
       )}
 
       {/* Empty State for Collections */}
-      {activeTab === "my_collection" && tracks.length === 0 && (
+      {activeTab === "my_collection" && playlists.length <= 1 && (
         <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
-          <h2 className="text-2xl font-bold text-light mb-3">{t.playlist?.noCollectionsTitle || "No collections found"}</h2>
+          <h2 className="text-2xl font-bold text-light mb-3">{t.playlist?.noCollectionsTitle || "No playlists found"}</h2>
           <p className="text-light/50 max-w-md">
-            {t.playlist?.noCollectionsDesc || "Folders with music will automatically appear here as your collections."}
+            {t.playlist?.noCollectionsDesc || "Create your first playlist and start organizing your favorite tracks."}
           </p>
         </div>
       )}

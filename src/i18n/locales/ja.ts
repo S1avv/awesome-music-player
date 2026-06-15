@@ -72,5 +72,6 @@
     lang: { en: "English", ru: "Русский", es: "Español", de: "Deutsch", fr: "Français", uk: "Українська", zh: "中文", ja: "日本語" }
   },
   library: { newTracks: "新しい曲を検出しました: {count} 曲追加", tracksRemoved: "曲が削除されました: {count} 曲" }
+,
+  queue: { title: "Playing Queue", clear: "Clear Queue", add: "Add to Queue", playNext: "Play Next", empty: "Queue is empty." }
 };
-

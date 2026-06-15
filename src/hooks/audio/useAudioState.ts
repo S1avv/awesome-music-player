@@ -22,6 +22,7 @@ export function useAudioState() {
   const [repeatMode, setRepeatMode] = useState<"off" | "all" | "one">("off");
   const [isShuffled, setIsShuffled] = useState(false);
   const [isNowPlayingOpen, setIsNowPlayingOpen] = useState(false);
+  const [isQueueOpen, setIsQueueOpen] = useState(false);
 
   return {
     currentTrack, setCurrentTrack,
@@ -33,6 +34,7 @@ export function useAudioState() {
     duration, setDuration,
     repeatMode, setRepeatMode,
     isShuffled, setIsShuffled,
-    isNowPlayingOpen, setIsNowPlayingOpen
+    isNowPlayingOpen, setIsNowPlayingOpen,
+    isQueueOpen, setIsQueueOpen
   };
 }

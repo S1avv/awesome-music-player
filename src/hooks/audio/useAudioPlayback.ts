@@ -162,12 +162,56 @@ export function useAudioPlayback({
     }
   }, [setVolumeState, audioRef]);
 
+  const addToQueue = useCallback((track: Track) => {
+    setQueue([...queue, track]);
+    showNotification(`Added "${track.title}" to queue`, "success");
+  }, [queue, setQueue, showNotification]);
+
+  const playNext = useCallback((track: Track) => {
+    if (!currentTrack) {
+      playTrack(track, [track]);
+      return;
+    }
+    const currentIndex = queue.findIndex(t => t.id === currentTrack.id);
+    const newQueue = [...queue];
+    newQueue.splice(currentIndex + 1, 0, track);
+    setQueue(newQueue);
+    showNotification(`Will play "${track.title}" next`, "success");
+  }, [currentTrack, queue, setQueue, playTrack, showNotification]);
+
+  const removeFromQueue = useCallback((index: number) => {
+    const newQueue = [...queue];
+    newQueue.splice(index, 1);
+    setQueue(newQueue);
+  }, [queue, setQueue]);
+
+  const clearQueue = useCallback(() => {
+    if (currentTrack) {
+      setQueue([currentTrack]);
+    } else {
+      setQueue([]);
+    }
+    showNotification("Queue cleared", "info");
+  }, [currentTrack, setQueue, showNotification]);
+
+  const reorderQueue = useCallback((startIndex: number, endIndex: number) => {
+    const newQueue = [...queue];
+    const [movedItem] = newQueue.splice(startIndex, 1);
+    newQueue.splice(endIndex, 0, movedItem);
+    setQueue(newQueue);
+  }, [queue, setQueue]);
+
   return {
     playTrack,
     handleNextTrack,
     togglePlayPause,
     seek,
     prevTrack,
-    setVolume
+    setVolume,
+    addToQueue,
+    playNext,
+    removeFromQueue,
+    clearQueue,
+    reorderQueue
   };
 }

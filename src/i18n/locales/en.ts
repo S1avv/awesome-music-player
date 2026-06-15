@@ -72,5 +72,6 @@
     lang: { en: "English", ru: "Русский", es: "Español", de: "Deutsch", fr: "Français", uk: "Українська", zh: "中文", ja: "日本語" }
   },
   library: { newTracks: "New tracks detected: {count} added", tracksRemoved: "Track(s) removed: {count}" }
+,
+  queue: { title: "Playing Queue", clear: "Clear Queue", add: "Add to Queue", playNext: "Play Next", empty: "Queue is empty." }
 };
-

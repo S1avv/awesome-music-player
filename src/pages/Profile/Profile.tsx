@@ -132,7 +132,7 @@ export function Profile() {
   } = useSettings();
   
   const { t } = useTranslation();
-  const { tracks, diskSpace, collections } = useLibrary();
+  const { tracks, diskSpace, playlists } = useLibrary();
 
   const activityStats = useMemo(() => {
     let totalSeconds = 0;
@@ -165,14 +165,14 @@ export function Profile() {
     const totalHours = (totalSeconds / 3600).toFixed(1);
 
     // Calculate Playlists
-    const playlistsCount = collections.length > 0 ? collections.length - 1 : 0;
+    const playlistsCount = playlists.length > 0 ? playlists.length - 1 : 0;
 
     return {
       totalHours,
       playlistsCount,
       topArtist
     };
-  }, [tracks, collections.length, t.common.none, t.home.unknownArtist]);
+  }, [tracks, playlists.length, t.common.none, t.home.unknownArtist]);
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 B';

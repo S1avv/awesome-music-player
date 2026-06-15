@@ -5,52 +5,15 @@ import { invoke } from "@tauri-apps/api/core";
 import { useLibrary } from "../../contexts/LibraryContext";
 import { useNotification } from "../../contexts/NotificationContext";
 import { useTranslation } from "../../i18n";
-import { ArrowLeft, Save, Music, User, Disc, FolderPlus, Search, Check, ChevronDown, Trash2 } from "lucide-react";
-import { CoverSearchModal } from "./components/CoverSearchModal";
+import { ArrowLeft, Save, Music, User, Disc, Search, Check, Trash2 } from "lucide-react";
+import { CoverSearchModal } from "../../components/Modals/CoverSearchModal";
 
-function CustomSelect({ options, value, onChange, placeholder }: { options: {id: string, name: string}[], value: string, onChange: (val: string) => void, placeholder: string }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const selected = options.find(o => o.id === value);
-  return (
-    <div className="relative">
-      <div 
-        className="bg-dark-alt border border-white/10 text-light px-4 py-3 rounded-xl cursor-pointer flex justify-between items-center hover:border-secondary transition-colors"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <span className={selected ? "text-light" : "text-light/50"}>{selected ? selected.name : placeholder}</span>
-        <ChevronDown className={`w-4 h-4 text-light/50 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-      </div>
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-0 w-full mt-2 bg-dark-alt border border-white/10 rounded-xl overflow-hidden z-50 max-h-60 overflow-y-auto py-2">
-            <div 
-              className={`px-4 py-2 cursor-pointer hover:bg-white/5 transition-colors ${!value ? 'text-secondary font-bold' : 'text-light/70'}`}
-              onClick={() => { onChange(""); setIsOpen(false); }}
-            >
-              {placeholder}
-            </div>
-            {options.map(opt => (
-              <div 
-                key={opt.id}
-                className={`px-4 py-2 cursor-pointer hover:bg-white/5 transition-colors ${value === opt.id ? 'text-secondary font-bold' : 'text-light'}`}
-                onClick={() => { onChange(opt.id); setIsOpen(false); }}
-              >
-                {opt.name}
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
 
 export function TrackDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { tracks, collections, scanLibrary } = useLibrary();
+  const { tracks, scanLibrary } = useLibrary();
   const { showNotification } = useNotification();
   
   const [title, setTitle] = useState("");
@@ -58,7 +21,7 @@ export function TrackDetail() {
   const [album, setAlbum] = useState("");
   const [coverPath, setCoverPath] = useState<string | null>(null);
   const [coverPreview, setCoverPreview] = useState<string>("/PhonographRecord.png");
-  const [selectedAlbumFolder, setSelectedAlbumFolder] = useState<string>("");
+
   
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -116,27 +79,13 @@ export function TrackDetail() {
         coverPath
       });
 
-      let finalPath = track.path;
-
-      if (selectedAlbumFolder) {
-        finalPath = await invoke<string>("move_track", {
-          path: track.path,
-          newFolder: selectedAlbumFolder
-        });
-      }
-
       // Re-scan library to pick up changes
       await scanLibrary();
       
       showNotification(t.trackDetail.saveSuccess, "success");
       setIsSaved(true);
       
-      // Navigate to the new path if moved, otherwise go back
-      if (selectedAlbumFolder) {
-        navigate(`/track/${encodeURIComponent(finalPath)}`, { replace: true });
-      } else {
-        navigate(-1);
-      }
+      navigate(-1);
     } catch (error) {
       console.error("Failed to save track:", error);
     } finally {
@@ -157,16 +106,14 @@ export function TrackDetail() {
     }
   };
 
-  // Exclude main_library from target folders
-  const targetAlbums = collections.filter(c => c.id !== "main_library");
+
 
   const hasChanges = 
     track && (
       title !== (track.title || "") ||
       artist !== (track.artist || "") ||
       album !== (track.album || "") ||
-      coverPath !== null ||
-      selectedAlbumFolder !== ""
+      coverPath !== null
     );
 
   return (
@@ -241,17 +188,7 @@ export function TrackDetail() {
               />
             </div>
 
-            <div className="flex flex-col gap-2 relative z-10">
-              <label className="text-light/50 text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                <FolderPlus className="w-4 h-4" /> {t.trackDetail.moveToFolder}
-              </label>
-              <CustomSelect 
-                options={targetAlbums.map(a => ({ id: a.id, name: a.name }))}
-                value={selectedAlbumFolder}
-                onChange={setSelectedAlbumFolder}
-                placeholder={t.trackDetail.keepInCurrent}
-              />
-            </div>
+
 
             <div className="mt-4 flex gap-4 w-full">
               <button 
